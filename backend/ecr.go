@@ -6,7 +6,7 @@ import (
 )
 
 // ECRService ...
-var ECRService = ecr.New(Session)
+var ECRService *ecr.ECR
 
 func getLastDeployedCommit(images []*ecr.ImageIdentifier, digest string) string {
 	var lastCommit string

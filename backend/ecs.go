@@ -9,7 +9,7 @@ import (
 )
 
 // ECSService ...
-var ECSService = ecs.New(Session)
+var ECSService *ecs.ECS
 
 func updateService(cluster string, service string, taskDefinitionARN string) *ecs.UpdateServiceOutput {
 	input := &ecs.UpdateServiceInput{
