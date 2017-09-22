@@ -2,9 +2,37 @@ package main
 
 import (
 	"net/http"
+	"strings"
 
+	"github.com/elazarl/go-bindata-assetfs"
+	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
 )
+
+type binaryFileSystem struct {
+	fs http.FileSystem
+}
+
+func (b *binaryFileSystem) Open(name string) (http.File, error) {
+	return b.fs.Open(name)
+}
+
+func (b *binaryFileSystem) Exists(prefix string, filepath string) bool {
+	if p := strings.TrimPrefix(filepath, prefix); len(p) < len(filepath) {
+		if _, err := b.fs.Open(p); err != nil {
+			return false
+		}
+		return true
+	}
+	return false
+}
+
+func BinaryFileSystem(root string) *binaryFileSystem {
+	fs := &assetfs.AssetFS{Asset, AssetDir, AssetInfo, root}
+	return &binaryFileSystem{
+		fs,
+	}
+}
 
 // UFOQuery Struct for passing query strings
 type UFOQuery struct {
@@ -38,8 +66,7 @@ func routes() *gin.Engine {
 	routes.OPTIONS("/ufo", ok)
 	routes.OPTIONS("/ufo/deploy", ok)
 
-	routes.StaticFile("/", "./app/dist/index.html")
-	routes.StaticFS("/static", http.Dir("./app/dist/static"))
+	routes.Use(static.Serve("/", BinaryFileSystem("../app/dist/")))
 
 	routes.GET("/ufo/clusters", func(c *gin.Context) {
 		c.JSON(200, listECSClusters())
