@@ -14,6 +14,11 @@ export default {
     ]),
     makeDeployment() {
       this.runDeploy(this.deployUnit);
+      this.$notify({
+        group: 'ufo',
+        title: 'UFO',
+        text: 'Your deployment has been scheduled',
+      });
     },
   },
   computed: {
