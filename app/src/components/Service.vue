@@ -6,7 +6,7 @@
       <option v-for='service in services' :key="service"> {{ service }} </option>
     </select>
     <div v-if="currentService" class="message">
-      commit <b>hash</b> deployed <b>{{ timeAgo }}</b>
+      commit <b>{{ currentCommit }}</b> deployed <b>{{ timeAgo }}</b>
     </div>
   </div>
 </template>
@@ -18,11 +18,12 @@ import distanceInWordsToNow from 'date-fns/distance_in_words_to_now';
 export default {
   data() {
     return {
-      currentServiceCommit: '',
+
     };
   },
   methods: {
     ...mapActions([
+      'fetchCommit',
       'fetchService',
       'fetchVersions',
       'setService',
@@ -31,7 +32,9 @@ export default {
     updateServiceAndFetchVersions(e) {
       this.setService(e.target.value);
       this.clearVersions();
-      this.fetchService(this.deployUnit);
+      this.fetchService(this.deployUnit).then(() => {
+        this.fetchCommit(this.currentService.TaskDefinition);
+      });
       this.fetchVersions(this.deployUnit.service);
     },
   },
@@ -40,6 +43,7 @@ export default {
       deployUnit: state => state.deployUnit,
       services: state => state.services,
       currentService: state => state.service,
+      currentCommit: state => state.commit,
     }),
     timeAgo() {
       return `${distanceInWordsToNow(this.currentService.Deployments[0].UpdatedAt)} ago`;
