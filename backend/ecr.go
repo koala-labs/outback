@@ -19,17 +19,17 @@ func getStageDigest(images []*ecr.ImageIdentifier) string {
 	return latestDigest
 }
 
-func listImages(repoName string) []*ecr.ImageIdentifier {
-	input := &ecr.ListImagesInput{
+func describeImages(repoName string) []*ecr.ImageDetail {
+	input := &ecr.DescribeImagesInput{
 		RepositoryName: aws.String(repoName),
 	}
 
-	result, err := ECRService.ListImages(input)
+	result, err := ECRService.DescribeImages(input)
 	handleECRErr(err)
 
-	images := make([]*ecr.ImageIdentifier, 0)
-	for _, image := range result.ImageIds {
-		if image.ImageTag != nil {
+	images := make([]*ecr.ImageDetail, 0)
+	for _, image := range result.ImageDetails {
+		if image.ImageTags != nil {
 			images = append(images, image)
 		}
 	}
@@ -37,10 +37,10 @@ func listImages(repoName string) []*ecr.ImageIdentifier {
 	return images
 }
 
-func filterImages(images []*ecr.ImageIdentifier) []string {
+func filterImages(images []*ecr.ImageDetail) []string {
 	versions := make([]string, 0)
 	for _, image := range images {
-		versions = append(versions, *image.ImageTag)
+		versions = append(versions, *image.ImageTags[0])
 	}
 	return versions
 }

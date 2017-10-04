@@ -93,7 +93,7 @@ func routes() *gin.Engine {
 
 	routes.GET("/ufo/versions", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, filterImages(listImages(ufoQuery.Service)))
+			c.JSON(200, describeImages(ufoQuery.Service))
 		}
 	})
 
