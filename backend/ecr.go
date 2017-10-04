@@ -37,7 +37,14 @@ func listImages(repoName string) []*ecr.ImageIdentifier {
 	result, err := ECRService.ListImages(input)
 	handleECRErr(err)
 
-	return result.ImageIds
+	images := make([]*ecr.ImageIdentifier, 0)
+	for _, image := range result.ImageIds {
+		if image.ImageTag != nil {
+			images = append(images, image)
+		}
+	}
+
+	return images
 }
 
 func filterImages(images []*ecr.ImageIdentifier) []string {
