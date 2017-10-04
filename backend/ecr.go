@@ -8,16 +8,6 @@ import (
 // ECRService ...
 var ECRService *ecr.ECR
 
-func getLastDeployedCommit(images []*ecr.ImageIdentifier, digest string) string {
-	var lastCommit string
-	for _, image := range images {
-		if *image.ImageDigest == digest {
-			lastCommit = *image.ImageTag
-		}
-	}
-	return lastCommit
-}
-
 func getStageDigest(images []*ecr.ImageIdentifier) string {
 	const STAGE = "latest"
 	var latestDigest string

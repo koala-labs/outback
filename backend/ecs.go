@@ -38,8 +38,8 @@ func describeService(cluster string, service string) *ecs.Service {
 	return result.Services[0]
 }
 
-func registerNewDefinition(service string, version string) (string, string) {
-	latestDefinitions := describeLatestDefinition(service)
+func registerNewTaskDefinition(service string, version string) (string, string) {
+	latestDefinitions := describeLatestTaskDefinition(service)
 	input := &ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via updateTaskDefinition
 		ContainerDefinitions: updateTaskDefinition(latestDefinitions.ContainerDefinitions, service, version),
@@ -67,7 +67,20 @@ func updateTaskDefinition(definitions []*ecs.ContainerDefinition, image string, 
 	return definitions
 }
 
-func describeLatestDefinition(service string) *ecs.TaskDefinition {
+func getLastDeployedCommit(taskDefinition string) string {
+	input := &ecs.DescribeTaskDefinitionInput{
+		TaskDefinition: aws.String(taskDefinition),
+	}
+
+	result, err := ECSService.DescribeTaskDefinition(input)
+	handleECSErr(err)
+
+	repo := result.TaskDefinition.ContainerDefinitions[0].Image
+	r := regexp.MustCompile(`\:(\S+)`)
+	return r.FindStringSubmatch(*repo)[1]
+}
+
+func describeLatestTaskDefinition(service string) *ecs.TaskDefinition {
 	latestDefintionARN := getLatestDefinitionARN(service)
 	latestDefintionARNValue := *latestDefintionARN
 	input := &ecs.DescribeTaskDefinitionInput{

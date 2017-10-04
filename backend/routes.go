@@ -36,8 +36,9 @@ func BinaryFileSystem(root string) *binaryFileSystem {
 
 // UFOQuery Struct for passing query strings
 type UFOQuery struct {
-	Cluster string `form:"cluster"`
-	Service string `form:"service"`
+	Cluster        string `form:"cluster"`
+	Service        string `form:"service"`
+	TaskDefinition string `form:"definition"`
 }
 
 // UFOJson Struct for passing json body
@@ -78,6 +79,12 @@ func routes() *gin.Engine {
 		}
 	})
 
+	routes.GET("/ufo/commit", func(c *gin.Context) {
+		if c.BindQuery(&ufoQuery) == nil {
+			c.JSON(200, getLastDeployedCommit(ufoQuery.TaskDefinition))
+		}
+	})
+
 	routes.GET("/ufo/services", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
 			c.JSON(200, listECSServices(ufoQuery.Cluster))
@@ -98,7 +105,7 @@ func routes() *gin.Engine {
 
 	routes.POST("/ufo/deploy", func(c *gin.Context) {
 		c.BindJSON(&ufoJSON)
-		service, taskDefinitionArn := registerNewDefinition(ufoJSON.Service, ufoJSON.Version)
+		service, taskDefinitionArn := registerNewTaskDefinition(ufoJSON.Service, ufoJSON.Version)
 		c.JSON(201, updateService(ufoJSON.Cluster, service, taskDefinitionArn))
 	})
 
