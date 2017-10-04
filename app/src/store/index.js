@@ -8,6 +8,7 @@ const store = new Vuex.Store({
   state: {
     clusters: [],
     services: [],
+    service: null,
     versions: [],
     deployUnit: {
       cluster: '',
@@ -24,6 +25,10 @@ const store = new Vuex.Store({
     async fetchServices({ commit }, cluster) {
       const res = await axios.get(`http://localhost:8080/ufo/services?cluster=${cluster}`);
       commit('FETCH_SERVICES', res.data);
+    },
+    async fetchService({ commit }, { cluster, service }) {
+      const res = await axios.get(`http://localhost:8080/ufo/service?cluster=${cluster}&service=${service}`);
+      commit('FETCH_SERVICE', res.data);
     },
     async fetchVersions({ commit }, service) {
       const res = await axios.get(`http://localhost:8080/ufo/versions?service=${service}`);
@@ -55,6 +60,9 @@ const store = new Vuex.Store({
     },
     FETCH_SERVICES(state, payload) {
       state.services = payload;
+    },
+    FETCH_SERVICE(state, payload) {
+      state.service = payload;
     },
     SET_SERVICE(state, payload) {
       state.deployUnit.service = payload;

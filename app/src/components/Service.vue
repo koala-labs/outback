@@ -5,28 +5,45 @@
       <option value="" disabled selected>Select your service</option>
       <option v-for='service in services' :key="service"> {{ service }} </option>
     </select>
+    <div v-if="currentService" class="message">
+      commit <b>hash</b> deployed <b>{{ timeAgo }}</b>
+    </div>
   </div>
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex';
+import distanceInWordsToNow from 'date-fns/distance_in_words_to_now';
 
 export default {
+  data() {
+    return {
+      currentServiceCommit: '',
+    };
+  },
   methods: {
     ...mapActions([
+      'fetchService',
       'fetchVersions',
       'setService',
+      'clearVersions',
     ]),
     updateServiceAndFetchVersions(e) {
       this.setService(e.target.value);
-      this.fetchVersions(this.service);
+      this.clearVersions();
+      this.fetchService(this.deployUnit);
+      this.fetchVersions(this.deployUnit.service);
     },
   },
   computed: {
     ...mapState({
+      deployUnit: state => state.deployUnit,
       services: state => state.services,
-      service: state => state.deployUnit.service,
+      currentService: state => state.service,
     }),
+    timeAgo() {
+      return `${distanceInWordsToNow(this.currentService.Deployments[0].UpdatedAt)} ago`;
+    },
   },
 };
 </script>
@@ -34,9 +51,11 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang='scss' scoped>
 .main {
+  margin-left: 20px;
+
  .header {
     text-align: left;
-    padding: 20px 0 10px 20px;
+    padding: 20px 0 10px 0px;
     letter-spacing: 0.04em;
     font-weight: bold;
  }
@@ -45,6 +64,13 @@ export default {
     width: 245px;
     height: 25px;
     font-weight: bold;
+    display: table;
+ }
+
+ .message {
+   font-size: 14px;
+   padding: 10px 0 0 0;
+   text-align: left;
  }
 }
 </style>

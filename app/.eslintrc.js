@@ -30,6 +30,7 @@ module.exports = {
       'vue': 'never'
     }],
     "no-param-reassign": 0,
+    "arrow-body-style": 1,
     // allow optionalDependencies
     'import/no-extraneous-dependencies': ['error', {
       'optionalDependencies': ['test/unit/index.js']
