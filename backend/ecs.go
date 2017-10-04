@@ -24,6 +24,20 @@ func updateService(cluster string, service string, taskDefinitionARN string) *ec
 	return result
 }
 
+func describeService(cluster string, service string) *ecs.Service {
+	input := &ecs.DescribeServicesInput{
+		Cluster: aws.String(cluster),
+		Services: []*string{
+			aws.String(service),
+		},
+	}
+
+	result, err := ECSService.DescribeServices(input)
+	handleECSErr(err)
+
+	return result.Services[0]
+}
+
 func registerNewDefinition(service string, version string) (string, string) {
 	latestDefinitions := describeLatestDefinition(service)
 	input := &ecs.RegisterTaskDefinitionInput{

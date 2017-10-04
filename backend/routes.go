@@ -72,6 +72,12 @@ func routes() *gin.Engine {
 		c.JSON(200, listECSClusters())
 	})
 
+	routes.GET("/ufo/service", func(c *gin.Context) {
+		if c.BindQuery(&ufoQuery) == nil {
+			c.JSON(200, describeService(ufoQuery.Cluster, ufoQuery.Service))
+		}
+	})
+
 	routes.GET("/ufo/services", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
 			c.JSON(200, listECSServices(ufoQuery.Cluster))
