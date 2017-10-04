@@ -25,9 +25,9 @@ export default {
       'clearVersions',
     ]),
     updateClusterFetchServices(e) {
+      this.clearServiceAndVersions();
       this.setCluster(e.target.value);
       this.fetchServices(e.target.value);
-      this.clearServiceAndVersions();
     },
     clearServiceAndVersions() {
       this.setService('');
@@ -47,9 +47,11 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang='scss' scoped>
 .main {
+  margin-left: 20px;
+
  .header {
     text-align: left;
-    padding: 20px 0 10px 20px;
+    padding: 20px 0 10px 0px;
     letter-spacing: 0.04em;
     font-weight: bold;
  }
@@ -58,7 +60,7 @@ export default {
     width: 245px;
     height: 25px;
     font-weight: bold;
-    text-align: left;
+    display: table;
  }
 }
 </style>
