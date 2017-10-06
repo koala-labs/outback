@@ -37,7 +37,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang='scss' scoped>
 .main {
-  margin-left: 20px;
+  margin: 0 20px 0 20px;
   
  .header {
     text-align: left;
