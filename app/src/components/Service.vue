@@ -30,12 +30,15 @@ export default {
       'clearVersions',
     ]),
     updateServiceAndFetchVersions(e) {
-      this.setService(e.target.value);
+      this.$Progress.start();
       this.clearVersions();
+      this.setService(e.target.value).then(() => {
+        this.fetchVersions(this.deployUnit.service);
+      });
       this.fetchService(this.deployUnit).then(() => {
         this.fetchCommit(this.currentService.TaskDefinition);
       });
-      this.fetchVersions(this.deployUnit.service);
+      this.$Progress.finish();
     },
   },
   computed: {

@@ -13,7 +13,9 @@ import { mapState, mapActions } from 'vuex';
 
 export default {
   beforeMount() {
+    this.$Progress.start();
     this.fetchClusters();
+    this.$Progress.finish();
   },
   methods: {
     ...mapActions([
@@ -27,7 +29,9 @@ export default {
     updateClusterFetchServices(e) {
       this.clearServiceAndVersions();
       this.setCluster(e.target.value);
+      this.$Progress.start();
       this.fetchServices(e.target.value);
+      this.$Progress.finish();
     },
     clearServiceAndVersions() {
       this.setService('');

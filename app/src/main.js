@@ -8,17 +8,8 @@ import router from './router';
 import store from './store';
 
 const progressBarOptions = {
-  color: '#bffaf3',
-  failedColor: '#874b4b',
-  thickness: '5px',
-  transition: {
-    speed: '0.2s',
-    opacity: '0.6s',
-    termination: 300,
-  },
-  autoRevert: true,
-  location: 'left',
-  inverse: false,
+  color: '#2196F3',
+  failedColor: '#F44336',
 };
 
 Vue.use(VueProgressBar, progressBarOptions);
