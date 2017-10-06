@@ -33,7 +33,7 @@ export default {
       this.$Progress.start();
       this.clearVersions();
       this.setService(e.target.value).then(() => {
-        this.fetchVersions(this.deployUnit.service);
+        this.fetchVersions(this.deployUnit);
       });
       this.fetchService(this.deployUnit).then(() => {
         this.fetchCommit(this.currentService.TaskDefinition);
@@ -58,7 +58,7 @@ export default {
 <!-- Add "scoped" attribute to limit CSS to this component only -->
 <style lang='scss' scoped>
 .main {
-  margin-left: 20px;
+  margin: 0 20px 0 20px;
 
  .header {
     text-align: left;

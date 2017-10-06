@@ -31,8 +31,8 @@ const store = new Vuex.Store({
       const res = await axios.get(`http://localhost:8080/ufo/service?cluster=${cluster}&service=${service}`);
       commit('FETCH_SERVICE', res.data);
     },
-    async fetchVersions({ commit }, service) {
-      const res = await axios.get(`http://localhost:8080/ufo/versions?service=${service}`);
+    async fetchVersions({ commit }, { cluster, service }) {
+      const res = await axios.get(`http://localhost:8080/ufo/versions?cluster=${cluster}&service=${service}`);
       commit('FETCH_VERSIONS', res.data);
     },
     async fetchCommit({ commit }, definition) {
