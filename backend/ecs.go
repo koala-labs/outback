@@ -38,8 +38,12 @@ func describeService(cluster string, service string) *ecs.Service {
 	return result.Services[0]
 }
 
-func registerNewTaskDefinition(service string, version string) (string, string) {
-	latestDefinitions := describeLatestTaskDefinition(service)
+func getServiceTaskDefinition(service *ecs.Service) *string {
+	return service.TaskDefinition
+}
+
+func registerNewTaskDefinition(cluster string, service string, version string) (string, string) {
+	latestDefinitions := describeTaskDefinition(cluster, service)
 	input := &ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via updateTaskDefinition
 		ContainerDefinitions: updateTaskDefinition(latestDefinitions.ContainerDefinitions, service, version),
@@ -80,29 +84,17 @@ func getLastDeployedCommit(taskDefinition string) string {
 	return r.FindStringSubmatch(*repo)[1]
 }
 
-func describeLatestTaskDefinition(service string) *ecs.TaskDefinition {
-	latestDefintionARN := getLatestDefinitionARN(service)
-	latestDefintionARNValue := *latestDefintionARN
+func describeTaskDefinition(cluster string, service string) *ecs.TaskDefinition {
+	currentService := describeService(cluster, service)
+	latestDefinition := *getServiceTaskDefinition(currentService)
 	input := &ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: aws.String(latestDefintionARNValue),
+		TaskDefinition: aws.String(latestDefinition),
 	}
 
 	result, err := ECSService.DescribeTaskDefinition(input)
 	handleECSErr(err)
 
 	return result.TaskDefinition
-}
-
-func getLatestDefinitionARN(service string) *string {
-	input := &ecs.ListTaskDefinitionsInput{
-		FamilyPrefix: aws.String(service),
-	}
-
-	result, err := ECSService.ListTaskDefinitions(input)
-	handleECSErr(err)
-
-	definitions := result.TaskDefinitionArns
-	return definitions[len(definitions)-1]
 }
 
 func listECSClusters() []string {

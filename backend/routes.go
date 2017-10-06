@@ -105,7 +105,7 @@ func routes() *gin.Engine {
 
 	routes.POST("/ufo/deploy", func(c *gin.Context) {
 		c.BindJSON(&ufoJSON)
-		service, taskDefinitionArn := registerNewTaskDefinition(ufoJSON.Service, ufoJSON.Version)
+		service, taskDefinitionArn := registerNewTaskDefinition(ufoJSON.Cluster, ufoJSON.Service, ufoJSON.Version)
 		c.JSON(201, updateService(ufoJSON.Cluster, service, taskDefinitionArn))
 	})
 
