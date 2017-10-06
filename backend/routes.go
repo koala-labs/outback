@@ -79,12 +79,6 @@ func routes() *gin.Engine {
 		}
 	})
 
-	routes.GET("/ufo/commit", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, getLastDeployedCommit(ufoQuery.TaskDefinition))
-		}
-	})
-
 	routes.GET("/ufo/services", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
 			c.JSON(200, listECSServices(ufoQuery.Cluster))
@@ -93,13 +87,13 @@ func routes() *gin.Engine {
 
 	routes.GET("/ufo/versions", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, describeImages(ufoQuery.Service))
+			c.JSON(200, describeImages(ufoQuery.Cluster, ufoQuery.Service))
 		}
 	})
 
-	routes.GET("/ufo/repo", func(c *gin.Context) {
+	routes.GET("/ufo/commit", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, getRepoURI(ufoQuery.Service))
+			c.JSON(200, getLastDeployedCommit(ufoQuery.TaskDefinition))
 		}
 	})
 

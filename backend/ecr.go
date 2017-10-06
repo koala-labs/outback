@@ -1,6 +1,8 @@
 package main
 
 import (
+	"regexp"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecr"
 )
@@ -19,7 +21,11 @@ func getStageDigest(images []*ecr.ImageIdentifier) string {
 	return latestDigest
 }
 
-func describeImages(repoName string) []*ecr.ImageDetail {
+func describeImages(cluster string, service string) []*ecr.ImageDetail {
+	currentTaskDefinition := describeTaskDefinition(cluster, service)
+	currentImage := *currentTaskDefinition.ContainerDefinitions[0].Image
+	r := regexp.MustCompile(`\/(\S+):`)
+	repoName := r.FindStringSubmatch(currentImage)[1]
 	input := &ecr.DescribeImagesInput{
 		RepositoryName: aws.String(repoName),
 	}
@@ -43,19 +49,6 @@ func filterImages(images []*ecr.ImageDetail) []string {
 		versions = append(versions, *image.ImageTags[0])
 	}
 	return versions
-}
-
-func getRepoURI(repoName string) string {
-	var repoURI string
-	repos := listRepos()
-	for _, repo := range repos {
-		repoValue := *repo.RepositoryName
-		if repoValue == repoName {
-			repoURIValue := *repo.RepositoryUri
-			repoURI = repoURIValue
-		}
-	}
-	return repoURI
 }
 
 func listRepos() []*ecr.Repository {
