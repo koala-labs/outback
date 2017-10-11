@@ -69,6 +69,12 @@ func routes() *gin.Engine {
 
 	routes.Use(static.Serve("/", BinaryFileSystem("../app/dist/")))
 
+	routes.GET("/ufo/status", func(c *gin.Context) {
+		if c.BindQuery(&ufoQuery) == nil {
+			sendDeploymentStatus(c.Writer, c.Request, ufoQuery.Cluster, ufoQuery.Service)
+		}
+	})
+
 	routes.GET("/ufo/clusters", func(c *gin.Context) {
 		c.JSON(200, listECSClusters())
 	})

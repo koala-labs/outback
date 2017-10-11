@@ -11,6 +11,9 @@ import (
 // ECSService ...
 var ECSService *ecs.ECS
 
+// TaskDefinition ...
+var TaskDefinition string
+
 func updateService(cluster string, service string, taskDefinitionARN string) *ecs.UpdateServiceOutput {
 	input := &ecs.UpdateServiceInput{
 		Cluster:        aws.String(cluster),
@@ -46,29 +49,25 @@ func registerNewTaskDefinition(cluster string, service string, version string) (
 	latestDefinitions := describeTaskDefinition(cluster, service)
 	input := &ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via updateTaskDefinition
-		ContainerDefinitions: updateTaskDefinition(latestDefinitions.ContainerDefinitions, service, version),
+		ContainerDefinitions: updateTaskDefinition(latestDefinitions, version),
 		Family:               latestDefinitions.Family,
 	}
 
 	result, err := ECSService.RegisterTaskDefinition(input)
 	handleECSErr(err)
 
-	taskDefinitionValue := *result.TaskDefinition.TaskDefinitionArn
+	TaskDefinition = *result.TaskDefinition.TaskDefinitionArn
 
-	return service, taskDefinitionValue
+	return service, TaskDefinition
 }
 
-func updateTaskDefinition(definitions []*ecs.ContainerDefinition, image string, version string) []*ecs.ContainerDefinition {
-	r := regexp.MustCompile(`\/(\S+):`)
-	for _, containerDefinition := range definitions {
-		containerDefinitionImage := *containerDefinition.Image
-		if r.FindStringSubmatch(containerDefinitionImage)[1] == image {
-			repo := getRepoURI(image)
-			newImage := fmt.Sprintf("%s:%s", repo, version)
-			*containerDefinition.Image = newImage
-		}
-	}
-	return definitions
+func updateTaskDefinition(definitions *ecs.TaskDefinition, version string) []*ecs.ContainerDefinition {
+	r := regexp.MustCompile(`(\S+):`)
+	currentImage := *definitions.ContainerDefinitions[0].Image
+	repo := r.FindStringSubmatch(currentImage)[1]
+	newImage := fmt.Sprintf("%s:%s", repo, version)
+	*definitions.ContainerDefinitions[0].Image = newImage
+	return definitions.ContainerDefinitions
 }
 
 func getLastDeployedCommit(taskDefinition string) string {
@@ -84,11 +83,36 @@ func getLastDeployedCommit(taskDefinition string) string {
 	return r.FindStringSubmatch(*repo)[1]
 }
 
+func listRunningTasks(cluster string, service string) []*string {
+	input := &ecs.ListTasksInput{
+		Cluster:       aws.String(cluster),
+		ServiceName:   aws.String(service),
+		DesiredStatus: aws.String("RUNNING"),
+	}
+
+	result, err := ECSService.ListTasks(input)
+	handleECSErr(err)
+
+	return result.TaskArns
+}
+
+func describeTasks(cluster string, tasks []*string) *ecs.DescribeTasksOutput {
+	input := &ecs.DescribeTasksInput{
+		Cluster: aws.String(cluster),
+		Tasks:   tasks,
+	}
+
+	result, err := ECSService.DescribeTasks(input)
+	handleECSErr(err)
+
+	return result
+}
+
 func describeTaskDefinition(cluster string, service string) *ecs.TaskDefinition {
 	currentService := describeService(cluster, service)
-	latestDefinition := *getServiceTaskDefinition(currentService)
+	currentDefinition := *getServiceTaskDefinition(currentService)
 	input := &ecs.DescribeTaskDefinitionInput{
-		TaskDefinition: aws.String(latestDefinition),
+		TaskDefinition: aws.String(currentDefinition),
 	}
 
 	result, err := ECSService.DescribeTaskDefinition(input)

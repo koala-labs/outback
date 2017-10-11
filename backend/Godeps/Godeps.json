@@ -180,6 +180,11 @@
 			"Rev": "11b8df160996e00fd4b55cbaafb3d84ec6d50fa8"
 		},
 		{
+			"ImportPath": "github.com/gorilla/websocket",
+			"Comment": "v1.0.0-32-g0b847f2",
+			"Rev": "0b847f2facc24ec406130a05bb1bb72d41993b05"
+		},
+		{
 			"ImportPath": "github.com/jmespath/go-jmespath",
 			"Comment": "0.2.2-14-gbd40a43",
 			"Rev": "bd40a432e4c76585ef6b72d3fd96fb9b6dc7b68d"
