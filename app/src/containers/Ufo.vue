@@ -53,7 +53,7 @@ body {
   margin: 15px 0 15px 0;
 
   /* Small screens */
-  @media all and (max-width: 800px) {
+  @media all and (max-width: 880px) {
       /* On small screens, we are no longer using row direction but column */
       flex-direction: column;
   }
