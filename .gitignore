@@ -1,2 +1,3 @@
 backend/ufo
 backend/bindata.go
+backend/vendor
