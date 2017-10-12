@@ -1,7 +1,7 @@
 <template>
   <div class='main'>
     <div class="header">version</div>
-    <select class="select" @change="updateVersion">
+    <select class="select" @change="onChange">
       <option value="" disabled selected>Select your version</option>
       <option v-for='version in sortedVersions' :key="version.RegistryId">{{ version.ImageTags[0] }}</option>
     </select>
@@ -9,22 +9,20 @@
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
 import getTime from 'date-fns/get_time';
 
 export default {
-  methods: {
-    ...mapActions([
-      'setVersion',
-    ]),
-    updateVersion(e) {
-      this.setVersion(e.target.value);
+  props: {
+    versions: {
+      type: Array,
+      required: true,
+    },
+    onChange: {
+      type: Function,
+      required: true,
     },
   },
   computed: {
-    ...mapState({
-      versions: state => state.versions,
-    }),
     sortedVersions() {
       return this.versions.sort((x, y) => {
         return getTime(y.ImagePushedAt) - getTime(x.ImagePushedAt);

@@ -1,55 +1,36 @@
 <template>
   <div class='main'>
     <div class="header">service</div>
-    <select class="select" @change="updateServiceAndFetchVersions">
+    <select class="select" @change="onChange">
       <option value="" disabled selected>Select your service</option>
       <option v-for='service in services' :key="service"> {{ service }} </option>
     </select>
-    <div v-if="currentService" class="message">
-      commit <b>{{ currentCommit }}</b> deployed <b>{{ timeAgo }}</b>
+    <div v-if="serviceDetail.commit" class="message">
+      commit <b>{{ serviceDetail.commit }}</b> deployed <b>{{ timeAgo }}</b>
     </div>
   </div>
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
 import distanceInWordsToNow from 'date-fns/distance_in_words_to_now';
 
 export default {
-  data() {
-    return {
-
-    };
-  },
-  methods: {
-    ...mapActions([
-      'fetchCommit',
-      'fetchService',
-      'fetchVersions',
-      'setService',
-      'clearVersions',
-    ]),
-    updateServiceAndFetchVersions(e) {
-      this.$Progress.start();
-      this.clearVersions();
-      this.setService(e.target.value).then(() => {
-        this.fetchVersions(this.deployUnit);
-      });
-      this.fetchService(this.deployUnit).then(() => {
-        this.fetchCommit(this.currentService.TaskDefinition);
-      });
-      this.$Progress.finish();
+  props: {
+    services: {
+      type: Array,
+      required: true,
+    },
+    serviceDetail: {
+      type: Object,
+    },
+    onChange: {
+      type: Function,
+      required: true,
     },
   },
   computed: {
-    ...mapState({
-      deployUnit: state => state.deployUnit,
-      services: state => state.services,
-      currentService: state => state.service,
-      currentCommit: state => state.commit,
-    }),
     timeAgo() {
-      return `${distanceInWordsToNow(this.currentService.Deployments[0].UpdatedAt)} ago`;
+      return `${distanceInWordsToNow(this.serviceDetail.deployedAt)} ago`;
     },
   },
 };

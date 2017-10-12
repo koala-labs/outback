@@ -1,7 +1,7 @@
 <template>
   <div class='main'>
     <div class="header">cluster</div>
-    <select class="select"  @change="updateClusterFetchServices">
+    <select class="select" @change="onChange">
       <option value="" disabled selected>Select your cluster</option>
       <option v-for='cluster in clusters' :key="cluster">{{ cluster }}</option>
     </select>
@@ -9,41 +9,18 @@
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
 
 export default {
-  beforeMount() {
-    this.$Progress.start();
-    this.fetchClusters();
-    this.$Progress.finish();
-  },
-  methods: {
-    ...mapActions([
-      'fetchClusters',
-      'fetchServices',
-      'setCluster',
-      'setService',
-      'setVersion',
-      'clearVersions',
-    ]),
-    updateClusterFetchServices(e) {
-      this.clearServiceAndVersions();
-      this.setCluster(e.target.value);
-      this.$Progress.start();
-      this.fetchServices(e.target.value);
-      this.$Progress.finish();
+  name: 'cluster',
+  props: {
+    clusters: {
+      type: Array,
+      required: true,
     },
-    clearServiceAndVersions() {
-      this.setService('');
-      this.setVersion('');
-      this.clearVersions();
+    onChange: {
+      type: Function,
+      required: true,
     },
-  },
-  computed: {
-    ...mapState({
-      clusters: state => state.clusters,
-      cluster: state => state.deployUnit.cluster,
-    }),
   },
 };
 </script>

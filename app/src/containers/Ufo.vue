@@ -5,33 +5,94 @@
     </div>
     <div class="container">
       <div class="item">
-        <Cluster></Cluster>
+        <Cluster :clusters="clusters" :onChange="setCluster"></Cluster>
       </div>
       <div class="item">
-        <Service></Service>
+        <Service :services="services" :onChange="setService" :serviceDetail="serviceDetail"></Service>
       </div>
       <div class="item">
-        <Version></Version>
+        <Version :versions="versions" :onChange="setVersion"></Version>
       </div>
     </div>
     <div class="button">
-      <DeployButton></DeployButton>
+      <DeployButton :onClick="deploy" :disabled="areAllSelected"></DeployButton>
     </div>
   </div>
 </template>
 
 <script>
-import DeployButton from '@/components/DeployButton';
+import { mapState, mapActions, mapGetters } from 'vuex';
 import Cluster from '@/components/Cluster';
 import Service from '@/components/Service';
 import Version from '@/components/Version';
+import DeployButton from '@/components/DeployButton';
+import Socket from '@/utils/socket';
 
 export default {
   components: {
-    DeployButton,
     Cluster,
     Service,
     Version,
+    DeployButton,
+  },
+  data() {
+    return {
+      isDeployed: false,
+    };
+  },
+  created() {
+    this.fetchClusters();
+  },
+  methods: {
+    ...mapActions([
+      'fetchClusters', 'fetchServices', 'fetchVersions',
+      'fetchServiceDetail', 'createDeployment',
+    ]),
+    setCluster(e) {
+      this.$store.dispatch('setCluster', e.target.value);
+      this.fetchServices(this.allSelected);
+    },
+    setService(e) {
+      this.$store.dispatch('setService', e.target.value);
+      this.fetchServiceDetail(this.allSelected);
+      this.fetchVersions(this.allSelected);
+    },
+    setVersion(e) {
+      this.$store.dispatch('setVersion', e.target.value);
+    },
+    show(text, type = '') {
+      const group = 'ufo';
+      const title = 'UFO';
+      this.$notify({ group, title, text, type });
+    },
+    deploy() {
+      this.createDeployment(this.allSelected).then(() => {
+        this.show('Your deployment has been scheduled', '');
+      });
+      Socket(this.allSelected).addEventListener('message', (e) => {
+        this.isDeployed = JSON.parse(e.data);
+      });
+    },
+  },
+  computed: {
+    ...mapState({
+      clusters: state => state.clusters.list,
+      services: state => state.services.list,
+      versions: state => state.versions.list,
+      serviceDeployedAt: state => state.services.deployedAt,
+      serviceCommit: state => state.services.commit,
+    }),
+    ...mapGetters(['allSelected', 'serviceDetail']),
+    areAllSelected() {
+      return !(this.allSelected.cluster && this.allSelected.service && this.allSelected.version);
+    },
+  },
+  watch: {
+    isDeployed: function checkIfDeployed() {
+      if (this.isDeployed) {
+        this.show('Deploy Successful', 'success');
+      }
+    },
   },
 };
 </script>

@@ -1,52 +1,19 @@
 <template>
   <div>
-    <button @click="makeDeployment(); getDeploymentStatus();" class="button">start deploy <span class="arrow">➤</span></button>
+    <button :disabled="disabled" @click="onClick" class="button">start deploy <span class="arrow">➤</span></button>
   </div>
 </template>
 
 <script>
-import { mapState, mapActions } from 'vuex';
-import Socket from '@/utils/socket';
 
 export default {
-  data() {
-    return {
-      isDeployed: false,
-    };
-  },
-  methods: {
-    ...mapActions([
-      'runDeploy',
-    ]),
-    makeDeployment() {
-      this.runDeploy(this.deployUnit).then(() => {
-        this.show('Your deployment has been scheduled', '');
-      });
+  props: {
+    onClick: {
+      type: Function,
+      required: true,
     },
-    getDeploymentStatus() {
-      Socket(this.deployUnit).addEventListener('message', (e) => {
-        this.isDeployed = JSON.parse(e.data);
-      });
-    },
-    show(text, type = '') {
-      const group = 'ufo';
-      const title = 'UFO';
-      this.$notify({ group, title, text, type });
-    },
-  },
-  computed: {
-    ...mapState({
-      deployUnit: state => state.deployUnit,
-    }),
-    isCompleteUnit() {
-      return !!(this.deployUnit.cluster && this.deployUnit.service && this.deployUnit.version);
-    },
-  },
-  watch: {
-    isDeployed: function checkIfDeployed() {
-      if (this.isDeployed) {
-        this.show('Deploy Successful', 'success');
-      }
+    disabled: {
+      type: Boolean,
     },
   },
 };
