@@ -10,17 +10,6 @@ import (
 // ECRService ...
 var ECRService *ecr.ECR
 
-func getStageDigest(images []*ecr.ImageIdentifier) string {
-	const STAGE = "latest"
-	var latestDigest string
-	for _, image := range images {
-		if *image.ImageTag == STAGE {
-			latestDigest = *image.ImageDigest
-		}
-	}
-	return latestDigest
-}
-
 func describeImages(cluster string, service string) []*ecr.ImageDetail {
 	currentTaskDefinition := describeTaskDefinition(cluster, service)
 	currentImage := *currentTaskDefinition.ContainerDefinitions[0].Image
