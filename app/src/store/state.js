@@ -3,12 +3,10 @@ export default {
   clusters: {
     list: [],
     selected: '',
-    loading: false,
   },
   services: {
     list: [],
     selected: '',
-    loading: false,
   },
   service: {
     detail: {
@@ -16,16 +14,13 @@ export default {
         UpdatedAt: '',
       }],
     },
-    loading: false,
     commit: '',
   },
   versions: {
     list: [],
     selected: '',
-    loading: false,
   },
   deployment: {
-    loading: false,
     result: {},
   },
 };

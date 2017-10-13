@@ -14,6 +14,7 @@
         <Version :versions="versions" :onChange="setVersion"></Version>
       </div>
     </div>
+    <ClipLoader :loading="loading"></ClipLoader>
     <div class="button">
       <DeployButton :onClick="deploy" :disabled="areAllSelected"></DeployButton>
     </div>
@@ -27,6 +28,7 @@ import Service from '@/components/Service';
 import Version from '@/components/Version';
 import DeployButton from '@/components/DeployButton';
 import Socket from '@/utils/socket';
+import ClipLoader from 'vue-spinner/src/ClipLoader';
 
 export default {
   components: {
@@ -34,6 +36,7 @@ export default {
     Service,
     Version,
     DeployButton,
+    ClipLoader,
   },
   data() {
     return {
@@ -76,6 +79,7 @@ export default {
   },
   computed: {
     ...mapState({
+      loading: state => state.loading,
       clusters: state => state.clusters.list,
       services: state => state.services.list,
       versions: state => state.versions.list,
