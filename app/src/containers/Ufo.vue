@@ -27,7 +27,6 @@ import Cluster from '@/components/Cluster';
 import Service from '@/components/Service';
 import Version from '@/components/Version';
 import DeployButton from '@/components/DeployButton';
-import Socket from '@/utils/socket';
 import ClipLoader from 'vue-spinner/src/ClipLoader';
 
 export default {
@@ -40,7 +39,7 @@ export default {
   },
   data() {
     return {
-      isDeployed: false,
+
     };
   },
   created() {
@@ -49,7 +48,7 @@ export default {
   methods: {
     ...mapActions([
       'fetchClusters', 'fetchServices', 'fetchVersions',
-      'fetchServiceDetail', 'createDeployment',
+      'fetchServiceDetail', 'createDeployment', 'getDeploymentStatus',
     ]),
     setCluster(e) {
       this.$store.dispatch('setCluster', e.target.value);
@@ -71,14 +70,13 @@ export default {
     deploy() {
       this.createDeployment(this.allSelected).then(() => {
         this.show('Your deployment has been scheduled', '');
-      });
-      Socket(this.allSelected).addEventListener('message', (e) => {
-        this.isDeployed = JSON.parse(e.data);
+        this.getDeploymentStatus(this.allSelected);
       });
     },
   },
   computed: {
     ...mapState({
+      isDeployed: state => state.deployment.status,
       loading: state => state.loading,
       clusters: state => state.clusters.list,
       services: state => state.services.list,

@@ -22,5 +22,6 @@ export default {
   },
   deployment: {
     result: {},
+    status: false,
   },
 };

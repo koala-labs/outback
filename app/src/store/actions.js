@@ -1,5 +1,6 @@
 import TYPES from '@/store/mutation-types';
 import API from '@/constants/api';
+import Socket from '@/utils/socket';
 import axios from 'axios';
 
 export default {
@@ -107,6 +108,21 @@ export default {
     } catch (e) {
       commit(TYPES.CREATE_DEPLOYMENT_FAILURE);
       console.log('Failed to create deployment');
+    }
+  },
+
+  async getDeploymentStatus({ commit }, { cluster, service, version }) {
+    commit(TYPES.OPEN_SOCKET);
+    try {
+      Socket({ cluster, service, version }).addEventListener('message', (e) => {
+        commit(TYPES.SET_DEPLOYMENT_STATUS, JSON.parse(e.data));
+      });
+      await Socket({ cluster, service, version }).addEventListener('close', () => {
+        commit(TYPES.CLOSE_SOCKET);
+      });
+    } catch (e) {
+      commit(TYPES.CLOSE_SOCKET);
+      console.log('Failed to get deployment completion status');
     }
   },
 };

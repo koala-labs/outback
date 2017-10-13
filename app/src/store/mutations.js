@@ -94,4 +94,16 @@ export default {
   [TYPES.CREATE_DEPLOYMENT_FAILURE](state) {
     state.loading = false;
   },
+
+  [TYPES.OPEN_SOCKET](state) {
+    state.loading = true;
+  },
+
+  [TYPES.CLOSE_SOCKET](state) {
+    state.loading = false;
+  },
+
+  [TYPES.SET_DEPLOYMENT_STATUS](state, status) {
+    state.deployment.status = status;
+  },
 };
