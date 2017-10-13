@@ -13,6 +13,7 @@ export default {
       });
       commit(TYPES.FETCH_CLUSTERS_SUCCESS, res.data);
     } catch (e) {
+      commit(TYPES.FETCH_CLUSTERS_FAILURE);
       console.log('Failed to fetch clusters');
     }
   },
@@ -31,6 +32,7 @@ export default {
       });
       commit(TYPES.FETCH_SERVICES_SUCCESS, res.data);
     } catch (e) {
+      commit(TYPES.FETCH_SERVICES_FAILURE);
       console.log('Failed to fetch services');
     }
   },
@@ -45,6 +47,7 @@ export default {
       commit(TYPES.FETCH_SERVICE_SUCCESS, res.data);
       return Promise.resolve(res.data);
     } catch (e) {
+      commit(TYPES.FETCH_SERVICE_FAILURE);
       console.log('Failed to fetch service detail');
       return e;
     }
@@ -60,6 +63,7 @@ export default {
       });
       commit(TYPES.FETCH_SERVICE_DETAIL_SUCCESS, res.data);
     } catch (e) {
+      commit(TYPES.FETCH_SERVICE_DETAIL_FAILURE);
       console.log('Failed to fetch service commit');
     }
   },
@@ -78,6 +82,7 @@ export default {
       });
       commit(TYPES.FETCH_VERSIONS_SUCCESS, res.data);
     } catch (e) {
+      commit(TYPES.FETCH_VERSIONS_FAILURE);
       console.log('Failed to fetch versions');
     }
   },
@@ -100,6 +105,7 @@ export default {
       });
       commit(TYPES.CREATE_DEPLOYMENT_SUCCESS, res.data);
     } catch (e) {
+      commit(TYPES.CREATE_DEPLOYMENT_FAILURE);
       console.log('Failed to create deployment');
     }
   },

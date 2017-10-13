@@ -11,6 +11,10 @@ export default {
     state.clusters.list = payload;
   },
 
+  [TYPES.FETCH_CLUSTERS_FAILURE](state) {
+    state.clusters.loading = false;
+  },
+
   [TYPES.SET_CLUSTER](state, cluster) {
     state.clusters.selected = cluster;
   },
@@ -25,6 +29,10 @@ export default {
     state.services.list = payload;
   },
 
+  [TYPES.FETCH_SERVICES_FAILURE](state) {
+    state.services.loading = false;
+  },
+
   [TYPES.FETCH_SERVICE](state) {
     state.service.loading = true;
   },
@@ -34,6 +42,10 @@ export default {
     state.service.detail = payload;
   },
 
+  [TYPES.FETCH_SERVICE_FAILURE](state) {
+    state.service.loading = false;
+  },
+
   [TYPES.FETCH_SERVICE_DETAIL](state) {
     state.service.loading = true;
   },
@@ -41,6 +53,10 @@ export default {
   [TYPES.FETCH_SERVICE_DETAIL_SUCCESS](state, payload) {
     state.service.loading = false;
     state.service.commit = payload;
+  },
+
+  [TYPES.FETCH_SERVICE_DETAIL_FAILURE](state) {
+    state.service.loading = false;
   },
 
   [TYPES.SET_SERVICE](state, service) {
@@ -57,6 +73,10 @@ export default {
     state.versions.list = payload;
   },
 
+  [TYPES.FETCH_VERSIONS_FAILURE](state) {
+    state.versions.loading = false;
+  },
+
   [TYPES.SET_VERSION](state, version) {
     state.versions.selected = version;
   },
@@ -69,5 +89,9 @@ export default {
   [TYPES.CREATE_DEPLOYMENT_SUCCESS](state, payload) {
     state.deployment.loading = false;
     state.deployment.result = payload;
+  },
+
+  [TYPES.CREATE_DEPLOYMENT_FAILURE](state) {
+    state.deployment.loading = false;
   },
 };
