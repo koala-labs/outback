@@ -1,3 +1,6 @@
+// Generate binary data from static web assets
+//go:generate go-bindata ../app/dist/...
+
 package main
 
 import (
