@@ -2,11 +2,6 @@ package main
 
 import (
 	"flag"
-
-	//"github.com/aws/aws-sdk-go/aws"
-	//"github.com/aws/aws-sdk-go/aws/session"
-	//"github.com/aws/aws-sdk-go/service/ecr"
-	//"github.com/aws/aws-sdk-go/service/ecs"
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
@@ -24,13 +19,6 @@ func main() {
 	}
 
 	u := ufo.Fly(c)
-
-	//Session = session.Must(session.NewSessionWithOptions(session.Options{
-	//	Config:  aws.Config{Region: aws.String(*region)},
-	//	Profile: *profile,
-	//}))
-	//ECSService = ecs.New(Session)
-	//ECRService = ecr.New(Session)
 
 	router := routes(u)
 	router.Run()
