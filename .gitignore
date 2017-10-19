@@ -1,3 +1,6 @@
 backend/ufo
 backend/bindata.go
 backend/vendor
+cli/app
+cli/ufo
+cli/application
