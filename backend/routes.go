@@ -7,6 +7,12 @@ import (
 	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	"github.com/aws/aws-sdk-go/service/ecs"
+	log "github.com/sirupsen/logrus"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"runtime"
+	"fmt"
 )
 
 type binaryFileSystem struct {
@@ -48,9 +54,19 @@ type UFOJson struct {
 	Version string `json:"version" binding:"required"`
 }
 
-func routes() *gin.Engine {
+type AppState struct {
+	c *ecs.Cluster
+	s *ecs.Service
+	oldT *ecs.TaskDefinition
+	newT *ecs.TaskDefinition
+	version string
+}
+
+func routes(UFO *ufo.UFO) *gin.Engine {
 	var ufoQuery UFOQuery
 	var ufoJSON UFOJson
+
+	s := &AppState{}
 
 	ok := func(c *gin.Context) {
 		c.String(200, "")
@@ -71,43 +87,123 @@ func routes() *gin.Engine {
 
 	routes.GET("/ufo/status", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
-			sendDeploymentStatus(c.Writer, c.Request, ufoQuery.Cluster, ufoQuery.Service)
+			sendDeploymentStatus(c.Writer, c.Request, s, UFO)
 		}
 	})
 
 	routes.GET("/ufo/clusters", func(c *gin.Context) {
-		c.JSON(200, listECSClusters())
-	})
+		clusters, err := UFO.Clusters()
 
-	routes.GET("/ufo/service", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, describeService(ufoQuery.Cluster, ufoQuery.Service))
-		}
+		HandleError(err)
+
+		c.JSON(200, clusters)
 	})
 
 	routes.GET("/ufo/services", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, listECSServices(ufoQuery.Cluster))
+		if c.BindQuery(&ufoQuery) != nil {
+			return
 		}
+
+		cluster, err := UFO.GetCluster(ufoQuery.Cluster)
+
+		HandleError(err)
+
+		s.c = cluster
+
+		services, err := UFO.Services(s.c)
+
+		HandleError(err)
+
+		c.JSON(200, services)
 	})
 
-	routes.GET("/ufo/versions", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, describeImages(ufoQuery.Cluster, ufoQuery.Service))
+	routes.GET("/ufo/service", func(c *gin.Context) {
+		if c.BindQuery(&ufoQuery) != nil {
+			return
 		}
+
+		service, err := UFO.GetService(s.c, ufoQuery.Service)
+
+		HandleError(err)
+
+		s.s = service
+
+		c.JSON(200, service)
+	})
+
+
+	routes.GET("/ufo/versions", func(c *gin.Context) {
+		if c.BindQuery(&ufoQuery) != nil {
+			return
+		}
+
+		//if s.s == nil {
+			service, err := UFO.GetService(s.c, ufoQuery.Service)
+
+			HandleError(err)
+
+			s.s = service
+		//}
+
+		t, err := UFO.GetTaskDefinition(s.c, s.s)
+
+		HandleError(err)
+
+		s.oldT = t
+
+		images, err := UFO.GetImages(t)
+
+		HandleError(err)
+
+		c.JSON(200, images)
 	})
 
 	routes.GET("/ufo/commit", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			c.JSON(200, getLastDeployedCommit(ufoQuery.TaskDefinition))
+		if c.BindQuery(&ufoQuery) != nil {
+			return
 		}
+
+		commit, err := UFO.GetLastDeployedCommit(*s.s.TaskDefinition)
+
+		HandleError(err)
+
+		c.JSON(200, commit)
 	})
 
 	routes.POST("/ufo/deploy", func(c *gin.Context) {
 		c.BindJSON(&ufoJSON)
-		service, taskDefinitionArn := registerNewTaskDefinition(ufoJSON.Cluster, ufoJSON.Service, ufoJSON.Version)
-		c.JSON(201, updateService(ufoJSON.Cluster, service, taskDefinitionArn))
+
+		t, err := UFO.Deploy(s.c, s.s, ufoJSON.Version)
+
+		s.newT = t
+
+		HandleError(err)
+
+		c.JSON(201, t)
 	})
 
 	return routes
+}
+
+func HandleError(err error) {
+	if err == nil {
+		return
+	}
+
+	parsed, ok := err.(awserr.Error)
+
+	if ! ok {
+		log.Fatalf("Unable to parse error: %v.\n", err)
+	}
+
+	pc := make([]uintptr, 15)
+	n := runtime.Callers(2, pc)
+	frames := runtime.CallersFrames(pc[:n])
+	frame, _ := frames.Next()
+
+	log.WithFields(log.Fields{
+		"code": parsed.Code(),
+		"error": parsed.Error(),
+		"frame": fmt.Sprintf("%s,:%d %s\n", frame.File, frame.Line, frame.Function),
+	}).Fatal("Received an error from AWS.")
 }

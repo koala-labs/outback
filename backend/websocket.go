@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 const waitTime = 2 * time.Second
@@ -24,7 +25,7 @@ type Message struct {
 	IsDeployed bool `json:"isDeployed"`
 }
 
-func sendDeploymentStatus(w http.ResponseWriter, r *http.Request, cluster string, service string) {
+func sendDeploymentStatus(w http.ResponseWriter, r *http.Request, s *AppState, UFO *ufo.UFO) {
 	// Upgrade initial GET request to a websocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
@@ -36,21 +37,30 @@ func sendDeploymentStatus(w http.ResponseWriter, r *http.Request, cluster string
 	fmt.Println("Client subscribed")
 	for {
 		time.Sleep(waitTime)
-		currentService := *describeService(cluster, service)
+		currentService, err := UFO.GetService(s.c, *s.s.ServiceName)
+
+		HandleError(err)
+
 		if msg.IsDeployed {
 			conn.Close()
 			break
 		}
 		if int(*currentService.DesiredCount) > 0 {
-			runningTasks := listRunningTasks(cluster, service)
+			runningTasks, err := UFO.RunningTasks(s.c, currentService)
+
+			HandleError(err)
+
 			if len(runningTasks) > 0 {
-				tasks := describeTasks(cluster, runningTasks)
+				tasks, err := UFO.GetTasks(s.c, runningTasks)
+
 				for _, task := range tasks.Tasks {
-					if *task.TaskDefinitionArn == TaskDefinition && *task.LastStatus == "RUNNING" {
+					if *task.TaskDefinitionArn == *s.newT.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
 						msg.IsDeployed = true
 					}
 				}
-				err := conn.WriteJSON(msg.IsDeployed)
+
+				err = conn.WriteJSON(msg.IsDeployed)
+
 				if err != nil {
 					fmt.Println(err)
 					return
