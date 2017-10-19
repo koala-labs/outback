@@ -13,7 +13,6 @@ import (
 )
 
 // @todo set up log file
-// @todo stuff should accept AWS types instead of strings
 
 type UFOConfig struct {
 	Profile *string
@@ -33,10 +32,12 @@ type UFO struct {
 	ECR *ecr.ECR
 }
 
+// Alias for CreateUFO
 func Fly(appConfig UFOConfig) *UFO {
 	return CreateUFO(appConfig)
 }
 
+// Create a UFO session and connect to AWS to create a session
 func CreateUFO(appConfig UFOConfig) *UFO {
 	awsSession := session.Must(session.NewSessionWithOptions(session.Options{
 		Config:  aws.Config{Region: appConfig.Region},
@@ -55,19 +56,26 @@ func CreateUFO(appConfig UFOConfig) *UFO {
 	return app
 }
 
-func (a *UFO) UseCluster(c *ecs.Cluster) {
-	a.State.Cluster = c
+// Set a cluster choice in UFO state
+// @todo this may be extraneous but if we decide to leave it in, we should have funcs optionally require
+//		the cluster/service/taskDef and if not passed, can use the ones stored in state.
+func (u *UFO) UseCluster(c *ecs.Cluster) {
+	u.State.Cluster = c
 }
 
-func (a *UFO) UseService(s *ecs.Service) {
-	a.State.Service = s
+// Set a service choice in UFO state
+func (u *UFO) UseService(s *ecs.Service) {
+	u.State.Service = s
 }
 
-func (a *UFO) UseTaskDefinition(t *ecs.TaskDefinition) {
-	a.State.TaskDefinition = t
+// Set a task definition choice in UFO state
+func (u *UFO) UseTaskDefinition(t *ecs.TaskDefinition) {
+	u.State.TaskDefinition = t
 }
 
-func (a *UFO) logError(err error) {
+// Handle errors, nil or otherwise
+// This func is intended to always be called after an error is returned from an AWS method call in UFO
+func (u *UFO) logError(err error) {
 	parsed, ok := err.(awserr.Error)
 
 	if ! ok {
@@ -86,11 +94,12 @@ func (a *UFO) logError(err error) {
 	}).Error("Received an error from AWS.")
 }
 
-func (a *UFO) ListECSClusters() ([]string, error) {
-	res, err := a.ECS.ListClusters(&ecs.ListClustersInput{})
+// View all ECS clusters in the account
+func (u *UFO) Clusters() ([]string, error) {
+	res, err := u.ECS.ListClusters(&ecs.ListClustersInput{})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -106,13 +115,14 @@ func (a *UFO) ListECSClusters() ([]string, error) {
 	return clusters, nil
 }
 
-func (a *UFO) ListECSServices(c *ecs.Cluster) ([]string, error) {
-	res, err := a.ECS.ListServices(&ecs.ListServicesInput{
+// View all services in a cluster
+func (u *UFO) Services(c *ecs.Cluster) ([]string, error) {
+	res, err := u.ECS.ListServices(&ecs.ListServicesInput{
 		Cluster: c.ClusterArn,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -128,15 +138,33 @@ func (a *UFO) ListECSServices(c *ecs.Cluster) ([]string, error) {
 	return services, nil
 }
 
-func (a *UFO) DescribeCluster(clusterName string) (*ecs.Cluster, error) {
-	res, err := a.ECS.DescribeClusters(&ecs.DescribeClustersInput{
+// View all running tasks in a cluster and service
+func (u *UFO) RunningTasks(c *ecs.Cluster, s *ecs.Service) ([]*string, error) {
+	result, err := u.ECS.ListTasks(&ecs.ListTasksInput{
+		Cluster:       c.ClusterName,
+		ServiceName:   s.ServiceName,
+		DesiredStatus: aws.String("RUNNING"),
+	})
+
+	if err != nil {
+		u.logError(err)
+
+		return nil, err
+	}
+
+	return result.TaskArns, nil
+}
+
+// Get cluster detail with cluster name or ARN
+func (u *UFO) GetCluster(clusterName string) (*ecs.Cluster, error) {
+	res, err := u.ECS.DescribeClusters(&ecs.DescribeClustersInput{
 		Clusters: []*string{
 			&clusterName,
 		},
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -144,8 +172,9 @@ func (a *UFO) DescribeCluster(clusterName string) (*ecs.Cluster, error) {
 	return res.Clusters[0], nil
 }
 
-func (a *UFO) DescribeService(c *ecs.Cluster, service string) (*ecs.Service, error) {
-	res, err := a.ECS.DescribeServices(&ecs.DescribeServicesInput{
+// Get service details within a cluster by service name or ARN
+func (u *UFO) GetService(c *ecs.Cluster, service string) (*ecs.Service, error) {
+	res, err := u.ECS.DescribeServices(&ecs.DescribeServicesInput{
 		Cluster: c.ClusterArn,
 		Services: []*string{
 			&service,
@@ -153,7 +182,7 @@ func (a *UFO) DescribeService(c *ecs.Cluster, service string) (*ecs.Service, err
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -161,13 +190,14 @@ func (a *UFO) DescribeService(c *ecs.Cluster, service string) (*ecs.Service, err
 	return res.Services[0], nil
 }
 
-func (a *UFO) DescribeTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskDefinition, error) {
-	result, err := a.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+// Get task definition details in a cluster and service by service's current task definition
+func (u *UFO) GetTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskDefinition, error) {
+	result, err := u.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: s.TaskDefinition,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -175,14 +205,16 @@ func (a *UFO) DescribeTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskD
 	return result.TaskDefinition, nil
 }
 
-func (a *UFO) DescribeTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasksOutput, error) {
-	result, err := a.ECS.DescribeTasks(&ecs.DescribeTasksInput{
+// Get all tasks in a cluster
+// @todo return []*Task
+func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasksOutput, error) {
+	result, err := u.ECS.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: c.ClusterName,
 		Tasks:   tasks,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -190,18 +222,20 @@ func (a *UFO) DescribeTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasks
 	return result, nil
 }
 
-func (a *UFO) DescribeImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) {
+// Get images for a task definition
+// @todo how does this handle multiple images in a task def?
+func (u *UFO) GetImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) {
 	currentImage := t.ContainerDefinitions[0].Image
 
 	// Parse the repo name out of an image tag
-	repoName := a.GetRepoNameFromImage(currentImage)
+	repoName := u.GetRepoNameFromImage(currentImage)
 
-	result, err := a.ECR.DescribeImages(&ecr.DescribeImagesInput{
+	result, err := u.ECR.DescribeImages(&ecr.DescribeImagesInput{
 		RepositoryName: aws.String(repoName),
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -217,14 +251,14 @@ func (a *UFO) DescribeImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) 
 	return images, nil
 }
 
-// @todo require the abstracted types instead of string names?
-func (a *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
-	result, err := a.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
+// Find the most recent committed image for a taskDefinition
+func (u *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
+	result, err := u.ECS.DescribeTaskDefinition(&ecs.DescribeTaskDefinitionInput{
 		TaskDefinition: &taskDefinition,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return "", err
 	}
@@ -233,28 +267,28 @@ func (a *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
 
 	r := regexp.MustCompile(`\:(\S+)`)
 
-	// @todo handle cases where regex does not return required matches
 	return r.FindStringSubmatch(*repo)[1], nil
 }
 
-func (a *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
-	// @todo rename funcs to be more descriptive?
-	t, err := a.DescribeTaskDefinition(c, s)
+// Create a new task definition with an image at a specific version
+// This copies an existing task definition and only updates the tag used for the image
+func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
+	t, err := u.GetTaskDefinition(c, s)
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err // @todo simplify return
 	}
 
-	result, err := a.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via updateTaskDefinition
-		ContainerDefinitions: a.UpdateTaskDefinition(t, version),
+		ContainerDefinitions: u.UpdateTaskDefinitionImage(*t, version),
 		Family:               t.Family,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -262,31 +296,8 @@ func (a *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	return result.TaskDefinition, nil
 }
 
-func (a *UFO) ListRunningTasks(c *ecs.Cluster, s *ecs.Service) ([]*string, error) {
-	result, err := a.ECS.ListTasks(&ecs.ListTasksInput{
-		Cluster:       c.ClusterName,
-		ServiceName:   s.ServiceName,
-		DesiredStatus: aws.String("RUNNING"),
-	})
-
-	if err != nil {
-		a.logError(err)
-
-		return nil, err
-	}
-
-	return result.TaskArns, nil
-}
-
-func (a *UFO) GetRepoNameFromImage(image *string) string {
-	// Parse the repo name out of an image tag
-	r := regexp.MustCompile(`\/(\S+):`) // /repoName:sha256:
-	repoName := r.FindStringSubmatch(*image)[1]
-
-	return repoName
-}
-
-func (a *UFO) UpdateTaskDefinition(t *ecs.TaskDefinition, version string) []*ecs.ContainerDefinition {
+// Copy a task definition and update its image tag
+func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) []*ecs.ContainerDefinition {
 	r := regexp.MustCompile(`(\S+):`)
 	currentImage := *t.ContainerDefinitions[0].Image
 
@@ -298,15 +309,25 @@ func (a *UFO) UpdateTaskDefinition(t *ecs.TaskDefinition, version string) []*ecs
 	return t.ContainerDefinitions
 }
 
-func (a *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) (*ecs.UpdateServiceOutput, error) {
-	result, err := a.ECS.UpdateService(&ecs.UpdateServiceInput{
+// Parse an image URL:tag and read its repo name
+func (u *UFO) GetRepoNameFromImage(image *string) string {
+	// Parse the repo name out of an image tag
+	r := regexp.MustCompile(`\/(\S+):`) // /repoName:sha256:
+	repoName := r.FindStringSubmatch(*image)[1]
+
+	return repoName
+}
+
+// Update a service in a cluster with a new task definition
+func (u *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) (*ecs.UpdateServiceOutput, error) {
+	result, err := u.ECS.UpdateService(&ecs.UpdateServiceInput{
 		Cluster:        c.ClusterArn,
 		Service:        s.ServiceArn,
 		TaskDefinition: t.TaskDefinitionArn,
 	})
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
@@ -314,16 +335,17 @@ func (a *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinitio
 	return result, nil
 }
 
-func (a *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
-	t, err := a.RegisterNewTaskDefinition(c, s, version)
+// Deploy a version to a service in a cluster
+func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
+	t, err := u.RegisterNewTaskDefinition(c, s, version)
 
 	if err != nil {
-		a.logError(err)
+		u.logError(err)
 
 		return nil, err
 	}
 
-	a.UpdateService(c, s, t)
+	u.UpdateService(c, s, t)
 
 	return t, nil
 }

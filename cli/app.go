@@ -40,6 +40,7 @@ func (a *App) Init() {
 	a.Shell.Run()
 }
 
+// Run the user through the required deployment steps
 func (a *App) Executor(c *ishell.Context) {
 	a.ChooseCluster(c)
 	a.ChooseService(c)
@@ -50,6 +51,11 @@ func (a *App) Executor(c *ishell.Context) {
 	os.Exit(0)
 }
 
+// HandleError is intended to be called with which error return to simplify error handling
+// Usage:
+// foo, err := GetFoo()
+// a.HandleError(err)
+// DoSomethingBecauseNoError()
 func (a *App) HandleError(err error) {
 	if err == nil {
 		return
@@ -61,13 +67,13 @@ func (a *App) HandleError(err error) {
 }
 
 func (a *App) ChooseCluster(c *ishell.Context) {
-	clusters, err := a.UFO.ListECSClusters()
+	clusters, err := a.UFO.Clusters()
 
 	a.HandleError(err)
 
 	choice := c.MultiChoice(clusters, "Select a cluster: ")
 
-	awsCluster, err := a.UFO.DescribeCluster(clusters[choice])
+	awsCluster, err := a.UFO.GetCluster(clusters[choice])
 
 	a.HandleError(err)
 
@@ -75,25 +81,25 @@ func (a *App) ChooseCluster(c *ishell.Context) {
 }
 
 func (a *App) ChooseService(c *ishell.Context) {
-	services, err := a.UFO.ListECSServices(a.AppState.c)
+	services, err := a.UFO.Services(a.AppState.c)
 
 	a.HandleError(err)
 
 	choice := c.MultiChoice(services, "Select a service: ")
 
-	awsService, err := a.UFO.DescribeService(a.AppState.c, services[choice])
+	awsService, err := a.UFO.GetService(a.AppState.c, services[choice])
 
 	a.HandleError(err)
 
 	a.AppState.s = awsService
 
-	a.AppState.oldT, err = a.UFO.DescribeTaskDefinition(a.AppState.c, a.AppState.s)
+	a.AppState.oldT, err = a.UFO.GetTaskDefinition(a.AppState.c, a.AppState.s)
 
 	a.HandleError(err)
 }
 
 func (a *App) ChooseVersion(c *ishell.Context) {
-	images, err := a.UFO.DescribeImages(a.AppState.oldT)
+	images, err := a.UFO.GetImages(a.AppState.oldT)
 
 	sort.Slice(images, func(i, j int) bool {
 		return images[i].ImagePushedAt.Unix() > images[j].ImagePushedAt.Unix()
@@ -162,7 +168,7 @@ func (a *App) IsDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) 
 		return false
 	}
 
-	runningTasks, err := a.UFO.ListRunningTasks(c, s)
+	runningTasks, err := a.UFO.RunningTasks(c, s)
 
 	a.HandleError(err)
 
@@ -170,7 +176,7 @@ func (a *App) IsDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) 
 		return false
 	}
 
-	tasks, err := a.UFO.DescribeTasks(c, runningTasks)
+	tasks, err := a.UFO.GetTasks(c, runningTasks)
 
 	a.HandleError(err)
 
