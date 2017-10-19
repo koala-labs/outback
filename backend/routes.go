@@ -137,13 +137,11 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 			return
 		}
 
-		//if s.s == nil {
-			service, err := UFO.GetService(s.c, ufoQuery.Service)
+		service, err := UFO.GetService(s.c, ufoQuery.Service)
 
-			HandleError(err)
+		HandleError(err)
 
-			s.s = service
-		//}
+		s.s = service
 
 		t, err := UFO.GetTaskDefinition(s.c, s.s)
 
