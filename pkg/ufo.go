@@ -1,35 +1,36 @@
 package ufo
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecr"
-	log "github.com/sirupsen/logrus"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"regexp"
 	"fmt"
+	"regexp"
 	"runtime"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/ecs"
+	log "github.com/sirupsen/logrus"
 )
 
 // @todo set up log file
 
 type UFOConfig struct {
 	Profile *string
-	Region *string
+	Region  *string
 }
 
 type UFOState struct {
-	Cluster *ecs.Cluster
-	Service *ecs.Service
+	Cluster        *ecs.Cluster
+	Service        *ecs.Service
 	TaskDefinition *ecs.TaskDefinition
 }
 
 type UFO struct {
-	State *UFOState
+	State   *UFOState
 	Session *session.Session
-	ECS *ecs.ECS
-	ECR *ecr.ECR
+	ECS     *ecs.ECS
+	ECR     *ecr.ECR
 }
 
 // Alias for CreateUFO
@@ -46,9 +47,9 @@ func CreateUFO(appConfig UFOConfig) *UFO {
 
 	app := &UFO{
 		Session: awsSession,
-		ECS: ecs.New(awsSession),
-		ECR: ecr.New(awsSession),
-		State: &UFOState{},
+		ECS:     ecs.New(awsSession),
+		ECR:     ecr.New(awsSession),
+		State:   &UFOState{},
 	}
 
 	log.SetFormatter(&log.JSONFormatter{})
@@ -78,7 +79,7 @@ func (u *UFO) UseTaskDefinition(t *ecs.TaskDefinition) {
 func (u *UFO) logError(err error) {
 	parsed, ok := err.(awserr.Error)
 
-	if ! ok {
+	if !ok {
 		log.Errorf("Unable to parse error: %v.\n", err)
 	}
 
@@ -88,7 +89,7 @@ func (u *UFO) logError(err error) {
 	frame, _ := frames.Next()
 
 	log.WithFields(log.Fields{
-		"code": parsed.Code(),
+		"code":  parsed.Code(),
 		"error": parsed.Error(),
 		"frame": fmt.Sprintf("%s,:%d %s\n", frame.File, frame.Line, frame.Function),
 	}).Error("Received an error from AWS.")
