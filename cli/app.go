@@ -1,30 +1,31 @@
 package main
 
 import (
+	"errors"
+	"fmt"
+	"os"
+	"sort"
+	"time"
+
+	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
-	"github.com/abiosoft/ishell"
-	"os"
-	"fmt"
-	"time"
-	"errors"
-	"sort"
 )
 
 type AppState struct {
-	c *ecs.Cluster
-	s *ecs.Service
-	oldT *ecs.TaskDefinition
-	newT *ecs.TaskDefinition
+	c       *ecs.Cluster
+	s       *ecs.Service
+	oldT    *ecs.TaskDefinition
+	newT    *ecs.TaskDefinition
 	version string
 }
 
 type App struct {
 	AppState
 	Profile *string
-	Region *string
-	UFO *ufo.UFO
-	Shell *ishell.Shell
+	Region  *string
+	UFO     *ufo.UFO
+	Shell   *ishell.Shell
 }
 
 func (a *App) Init() {
@@ -147,7 +148,7 @@ func (a *App) PollForStatus(c *ishell.Context) {
 	attempts := 0
 	waitTime := 2 * time.Second
 
-	for ! a.IsDeployed(a.AppState.c, a.AppState.s, a.AppState.newT) {
+	for !a.IsDeployed(a.AppState.c, a.AppState.s, a.AppState.newT) {
 		if attempts > 60 {
 			a.HandleError(errors.New("Timed out waiting for task to start."))
 
