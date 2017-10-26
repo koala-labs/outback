@@ -4,15 +4,16 @@ import (
 	"net/http"
 	"strings"
 
+	"fmt"
+	"runtime"
+
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/elazarl/go-bindata-assetfs"
 	"github.com/gin-gonic/contrib/static"
 	"github.com/gin-gonic/gin"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
-	"github.com/aws/aws-sdk-go/service/ecs"
 	log "github.com/sirupsen/logrus"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"runtime"
-	"fmt"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 type binaryFileSystem struct {
@@ -55,11 +56,12 @@ type UFOJson struct {
 }
 
 type AppState struct {
-	c *ecs.Cluster
-	s *ecs.Service
-	oldT *ecs.TaskDefinition
-	newT *ecs.TaskDefinition
-	version string
+	c          *ecs.Cluster
+	s          *ecs.Service
+	oldT       *ecs.TaskDefinition
+	newT       *ecs.TaskDefinition
+	IsDeployed bool `json:"isDeployed"`
+	version    string
 }
 
 func routes(UFO *ufo.UFO) *gin.Engine {
@@ -87,7 +89,7 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 
 	routes.GET("/ufo/status", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) == nil {
-			sendDeploymentStatus(c.Writer, c.Request, s, UFO)
+			PollForStatus(c.Writer, c.Request, UFO, s)
 		}
 	})
 
@@ -130,7 +132,6 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 
 		c.JSON(200, service)
 	})
-
 
 	routes.GET("/ufo/versions", func(c *gin.Context) {
 		if c.BindQuery(&ufoQuery) != nil {
@@ -190,7 +191,7 @@ func HandleError(err error) {
 
 	parsed, ok := err.(awserr.Error)
 
-	if ! ok {
+	if !ok {
 		log.Fatalf("Unable to parse error: %v.\n", err)
 	}
 
@@ -200,7 +201,7 @@ func HandleError(err error) {
 	frame, _ := frames.Next()
 
 	log.WithFields(log.Fields{
-		"code": parsed.Code(),
+		"code":  parsed.Code(),
 		"error": parsed.Error(),
 		"frame": fmt.Sprintf("%s,:%d %s\n", frame.File, frame.Line, frame.Function),
 	}).Fatal("Received an error from AWS.")

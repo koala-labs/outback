@@ -5,20 +5,18 @@ package main
 
 import (
 	"flag"
+
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
-
-// Session for AWS SDK calls
-//var Session *session.Session
 
 func main() {
 	profile := flag.String("profile", "default", "a string")
 	region := flag.String("region", "us-east-1", "a string")
 	flag.Parse()
 
-	c := ufo.UFOConfig {
+	c := ufo.UFOConfig{
 		Profile: profile,
-		Region: region,
+		Region:  region,
 	}
 
 	u := ufo.Fly(c)
