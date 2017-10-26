@@ -114,10 +114,11 @@ export default {
   async getDeploymentStatus({ commit }, { cluster, service, version }) {
     commit(TYPES.OPEN_SOCKET);
     try {
-      Socket({ cluster, service, version }).addEventListener('message', (e) => {
+      const socket = new Socket({ cluster, service, version });
+      await socket.addEventListener('message', (e) => {
         commit(TYPES.SET_DEPLOYMENT_STATUS, JSON.parse(e.data));
       });
-      await Socket({ cluster, service, version }).addEventListener('close', () => {
+      await socket.addEventListener('close', () => {
         commit(TYPES.CLOSE_SOCKET);
       });
     } catch (e) {
