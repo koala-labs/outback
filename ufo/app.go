@@ -2,7 +2,7 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 	"github.com/abiosoft/ishell"
 	"os"
 	"fmt"

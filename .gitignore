@@ -4,3 +4,5 @@ backend/vendor
 cli/app
 cli/ufo
 cli/application
+
+*.ufo/

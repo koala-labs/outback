@@ -2,53 +2,68 @@ package main
 
 import (
 	"flag"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
-	"github.com/abiosoft/ishell"
-	log "github.com/sirupsen/logrus"
+	"log"
 	"os"
+	"os/signal"
+	"syscall"
 )
 
+const UFO_CONFIG = ".ufo/config.json"
+
 func main() {
-	profile := flag.String("profile", "", "AWS profile to use")
-	region := flag.String("region", "us-east-1", "AWS region to use")
+	sigs := make(chan os.Signal, 1)
 
-	noInteractive := flag.Bool("i", false, "Non-interactive deployment.")
+	signal.Notify(sigs, syscall.SIGINT)
 
-	cluster := flag.String("cluster", "", "Cluster to deploy to. Required if non-interactive.")
-	service := flag.String("service", "", "Service to deploy to. Required if non-interactive.")
-	version := flag.String("version", "", "Version to deploy. Required if non-interactive.")
+	go func() {
+		<-sigs
+	}()
 
-	flag.Parse()
+	deployCommand := flag.NewFlagSet("deploy", flag.ExitOnError)
+	deployConfig := deployCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
 
-	if *profile == "" {
-		log.Fatalln("Profile option required.")
+	// @todo support
+	//initCommand := flag.NewFlagSet("init", flag.ExitOnError)
+	//useCommand := flag.NewFlagSet("use", flag.ExitOnError)
+	//listCommand := flag.NewFlagSet("list", flag.ExitOnError)
+
+	if len(os.Args) < 2 {
+		log.Println("A subcommand is required.")
+		flag.PrintDefaults()
+		os.Exit(1)
 	}
 
-	if *noInteractive {
-		for _, val := range []*string{cluster, service, version} {
-			if *val == "" {
-				log.Printf("Missing required option.")
-				flag.PrintDefaults()
-				os.Exit(1)
-			}
-		}
+	subCommand := os.Args[1]
+
+	switch subCommand {
+	case "deploy":
+		deployCommand.Parse(os.Args[2:])
+
+		RunDeployCmd(LoadConfigFromFile(*deployConfig), *deployVerbose)
+		// foo
+	case "init":
+		fallthrough
+	case "use":
+		fallthrough
+	case "list":
+		fallthrough
+	default:
+		log.Fatalln("Not supported yet.")
+	}
+}
+
+// HandleError is intended to be called with which error return to simplify error handling
+// Usage:
+// foo, err := GetFoo()
+// HandleError(err)
+// DoSomethingBecauseNoError()
+func HandleError(err error) {
+	if err == nil {
+		return
 	}
 
-	c := ufo.UFOConfig {
-		Profile: profile,
-		Region: region,
-	}
+	log.Printf("\nEncountered an error: %s\n", err.Error())
 
-	app := &App{
-		UFO: ufo.Fly(c),
-		Shell: ishell.New(),
-		f: &AppFlags{
-			*noInteractive,
-			*cluster,
-			*service,
-			*version,
-		},
-	}
-
-	app.Init()
+	os.Exit(1)
 }
