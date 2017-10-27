@@ -11,7 +11,7 @@ import (
 
 	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	ufo "gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 type AppState struct {

@@ -2,10 +2,11 @@ package main
 
 import (
 	"flag"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
+	"os"
+
 	"github.com/abiosoft/ishell"
 	log "github.com/sirupsen/logrus"
-	"os"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 func main() {
@@ -34,13 +35,13 @@ func main() {
 		}
 	}
 
-	c := ufo.UFOConfig {
+	c := ufo.UFOConfig{
 		Profile: profile,
-		Region: region,
+		Region:  region,
 	}
 
 	app := &App{
-		UFO: ufo.Fly(c),
+		UFO:   ufo.Fly(c),
 		Shell: ishell.New(),
 		f: &AppFlags{
 			*noInteractive,
