@@ -56,12 +56,11 @@ type UFOJson struct {
 }
 
 type AppState struct {
-	c          *ecs.Cluster
-	s          *ecs.Service
-	oldT       *ecs.TaskDefinition
-	newT       *ecs.TaskDefinition
-	IsDeployed bool `json:"isDeployed"`
-	version    string
+	c       *ecs.Cluster
+	s       *ecs.Service
+	oldT    *ecs.TaskDefinition
+	newT    *ecs.TaskDefinition
+	version string
 }
 
 func routes(UFO *ufo.UFO) *gin.Engine {

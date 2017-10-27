@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/gorilla/websocket"
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
@@ -21,12 +20,22 @@ var upgrader = websocket.Upgrader{
 	},
 }
 
-func IsDeployed(tasks *ecs.DescribeTasksOutput, s *AppState) {
+func IsDeployed(UFO *ufo.UFO, s *AppState) bool {
+	runningTasks, err := UFO.RunningTasks(s.c, s.s)
+
+	HandleError(err)
+
+	tasks, err := UFO.GetTasks(s.c, runningTasks)
+
+	HandleError(err)
+
 	for _, task := range tasks.Tasks {
 		if *task.TaskDefinitionArn == *s.newT.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
-			s.IsDeployed = true
+			return true
 		}
 	}
+
+	return false
 }
 
 func PollForStatus(w http.ResponseWriter, r *http.Request, UFO *ufo.UFO, s *AppState) {
@@ -39,37 +48,25 @@ func PollForStatus(w http.ResponseWriter, r *http.Request, UFO *ufo.UFO, s *AppS
 	defer conn.Close()
 
 	fmt.Println("Client subscribed")
-	for {
-		serviceDetail, err := UFO.GetService(s.c, *s.s.ServiceName)
 
-		HandleError(err)
+	HandleError(err)
 
-		runningTasks, err := UFO.RunningTasks(s.c, serviceDetail)
-
-		HandleError(err)
-
-		if s.IsDeployed {
-			conn.Close()
-			break
-		}
-
-		if len(runningTasks) > 0 {
-			tasks, err := UFO.GetTasks(s.c, runningTasks)
-
-			HandleError(err)
-
-			IsDeployed(tasks, s)
-
-			err = conn.WriteJSON(s.IsDeployed)
-
-			if err != nil {
-				fmt.Println(err)
-				return
-			}
-		}
+	for !IsDeployed(UFO, s) {
+		err = conn.WriteJSON(false)
+		HandleWriteError(err)
 
 		time.Sleep(waitTime)
 	}
 
+	err = conn.WriteJSON(true)
+	HandleWriteError(err)
+
 	fmt.Println("Client unsubscribed")
+}
+
+func HandleWriteError(err error) {
+	if err != nil {
+		log.Println("write:", err)
+		return
+	}
 }
