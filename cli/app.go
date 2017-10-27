@@ -55,7 +55,7 @@ func (a *App) Init() {
 }
 
 func (a *App) runNoInteractive() {
-	log.Printf("Running in non-interactive mode.\n")
+	log.Println("Running in non-interactive mode.")
 
 	a.AppState.c = a.loadCluster(a.f.cluster)
 	a.AppState.s, a.AppState.oldT = a.loadService(a.f.service)
