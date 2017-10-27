@@ -2,32 +2,46 @@ package main
 
 import (
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/ufo"
 	"github.com/abiosoft/ishell"
 	"os"
 	"fmt"
 	"time"
 	"errors"
 	"sort"
+	"log"
 )
 
 type AppState struct {
-	c *ecs.Cluster
-	s *ecs.Service
-	oldT *ecs.TaskDefinition
-	newT *ecs.TaskDefinition
+	c       *ecs.Cluster
+	s       *ecs.Service
+	oldT    *ecs.TaskDefinition
+	newT    *ecs.TaskDefinition
 	version string
+}
+
+type AppFlags struct {
+	noInteractive bool
+	cluster       string
+	service       string
+	version       string
 }
 
 type App struct {
 	AppState
+	f       *AppFlags
 	Profile *string
-	Region *string
-	UFO *ufo.UFO
-	Shell *ishell.Shell
+	Region  *string
+	UFO     *ufo.UFO
+	Shell   *ishell.Shell
 }
 
 func (a *App) Init() {
+	if a.f.noInteractive {
+		a.runNoInteractive()
+		return
+	}
+
 	a.Shell.Println("Welcome to UFO!")
 	a.Shell.Println("Use `help` or `start` to continue.")
 
@@ -38,6 +52,34 @@ func (a *App) Init() {
 	})
 
 	a.Shell.Run()
+}
+
+func (a *App) runNoInteractive() {
+	log.Printf("Running in non-interactive mode.\n")
+
+	a.AppState.c = a.loadCluster(a.f.cluster)
+	a.AppState.s, a.AppState.oldT = a.loadService(a.f.service)
+	a.AppState.version = a.f.version
+
+	a.AppState.newT = a.deploy()
+
+	attempts := 0
+	waitTime := 2 * time.Second
+
+	for ! a.IsDeployed(a.AppState.c, a.AppState.s, a.AppState.newT) {
+		if attempts > 60 {
+			a.HandleError(errors.New("Timed out waiting for task to start."))
+
+			return
+		}
+
+		attempts++
+
+		log.Print("Waiting.")
+		time.Sleep(waitTime)
+	}
+
+	log.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *a.AppState.newT.Family, *a.AppState.newT.Revision)
 }
 
 // Run the user through the required deployment steps
@@ -73,11 +115,15 @@ func (a *App) ChooseCluster(c *ishell.Context) {
 
 	choice := c.MultiChoice(clusters, "Select a cluster: ")
 
-	awsCluster, err := a.UFO.GetCluster(clusters[choice])
+	a.AppState.c = a.loadCluster(clusters[choice])
+}
+
+func (a *App) loadCluster(name string) *ecs.Cluster {
+	awsCluster, err := a.UFO.GetCluster(name)
 
 	a.HandleError(err)
 
-	a.AppState.c = awsCluster
+	return awsCluster
 }
 
 func (a *App) ChooseService(c *ishell.Context) {
@@ -87,15 +133,19 @@ func (a *App) ChooseService(c *ishell.Context) {
 
 	choice := c.MultiChoice(services, "Select a service: ")
 
-	awsService, err := a.UFO.GetService(a.AppState.c, services[choice])
+	a.AppState.s, a.AppState.oldT = a.loadService(services[choice])
+}
+
+func (a *App) loadService(name string) (*ecs.Service, *ecs.TaskDefinition) {
+	awsService, err := a.UFO.GetService(a.AppState.c, name)
 
 	a.HandleError(err)
 
-	a.AppState.s = awsService
-
-	a.AppState.oldT, err = a.UFO.GetTaskDefinition(a.AppState.c, a.AppState.s)
+	t, err := a.UFO.GetTaskDefinition(a.AppState.c, awsService)
 
 	a.HandleError(err)
+
+	return awsService, t
 }
 
 func (a *App) ChooseVersion(c *ishell.Context) {
@@ -132,13 +182,15 @@ func (a *App) ConfirmDeployment(c *ishell.Context) {
 		return
 	}
 
+	a.AppState.newT = a.deploy()
+}
+
+func (a *App) deploy() *ecs.TaskDefinition {
 	t, err := a.UFO.Deploy(a.AppState.c, a.AppState.s, a.AppState.version)
 
 	a.HandleError(err)
 
-	a.AppState.newT = t
-
-	c.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *t.Family, *t.Revision)
+	return t
 }
 
 func (a *App) PollForStatus(c *ishell.Context) {
@@ -160,7 +212,7 @@ func (a *App) PollForStatus(c *ishell.Context) {
 		time.Sleep(waitTime)
 	}
 
-	c.Println("\nSuccessfully deployed!")
+	c.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *a.AppState.newT.Family, *a.AppState.newT.Revision)
 }
 
 func (a *App) IsDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) bool {
