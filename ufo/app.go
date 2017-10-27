@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+
 	"log"
 	"os"
 	"sort"
@@ -10,7 +11,7 @@ import (
 
 	"github.com/abiosoft/ishell"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
+	ufo "gitlab.fuzzhq.com/Web-Ops/ufo/pkg"
 )
 
 type AppState struct {
