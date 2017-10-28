@@ -59,15 +59,29 @@ func main() {
 	case "deploy":
 		deployCommand.Parse(os.Args[2:])
 
-		RunDeployCmd(LoadConfigFromFile(*deployConfig), DeployOptions{
+		config, err := LoadConfigFromFile(*deployConfig)
+
+		if err != nil {
+			HandleError(err)
+		}
+
+		err = RunDeployCmd(config, DeployOptions{
 			Verbose:        *deployVerbose,
 			OverrideBranch: *deployBranch,
 		})
+
+		HandleError(err)
 		// foo
 	case "init":
-		RunInitCommand(*initLocation)
+		HandleError(RunInitCommand(*initLocation))
 	case "list":
-		RunListCommand(LoadConfigFromFile(*listConfig))
+		config, err := LoadConfigFromFile(*listConfig)
+
+		if err != nil {
+			HandleError(err)
+		}
+
+		RunListCommand(config)
 	case "use":
 		fallthrough
 	default:

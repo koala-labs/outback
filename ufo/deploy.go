@@ -32,50 +32,66 @@ type DeployCmd struct {
 	head    string
 }
 
-func getCurrentHead() string {
+func getCurrentHead() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
 
 	r, err := cmd.Output()
 
 	if err != nil {
-		HandleError(ErrGitError)
+		return "", ErrGitError
 	}
 
-	return strings.Trim(string(r), "\n")
+	return strings.Trim(string(r), "\n"), nil
 }
 
-func getCurrentBranch() string {
+func getCurrentBranch() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
 
 	r, err := cmd.Output()
 
 	if err != nil {
-		HandleError(ErrGitError)
+		return "", ErrGitError
 	}
 
-	return strings.Trim(string(r), "\n")
+	return strings.Trim(string(r), "\n"), nil
 }
 
-func RunDeployCmd(c *Config, options DeployOptions) {
+func RunDeployCmd(c *Config, options DeployOptions) error {
+	var err error
+
 	d := &DeployCmd{
 		Options: options,
 		branch:  options.OverrideBranch,
-		head:    getCurrentHead(),
+		//head:    getCurrentHead(),
 		c:       c,
 		s:       &DeployState{},
 	}
 
+	d.head, err = getCurrentHead()
+
+	if err != nil {
+		return err
+	}
+
 	if d.Options.OverrideBranch == EMPTY_VALUE {
-		d.branch = getCurrentBranch()
+		d.branch, err = getCurrentBranch()
+
+		if err != nil {
+			return err
+		}
 	}
 
 	e, err := c.GetEnvironmentByBranch(d.branch)
-	HandleError(err)
+
+	if err != nil {
+		return err
+	}
 
 	d.Env = e
 
 	d.initUFO()
-	d.deploy()
+
+	return d.deploy()
 }
 
 func (d *DeployCmd) initUFO() {
@@ -87,35 +103,48 @@ func (d *DeployCmd) initUFO() {
 	d.UFO = ufo.Fly(c)
 }
 
-func (d *DeployCmd) deploy() {
+func (d *DeployCmd) deploy() error {
 	fmt.Printf("Preparing to deploy branch %s to service %s on cluster %s.\n", d.Env.Branch, d.Env.Service, d.Env.Cluster)
 
 	// Push an image to docker repo
 	fmt.Println("Building docker image.")
-	d.buildImage()
+	err := d.buildImage()
+
+	if err != nil {
+		return err
+	}
 
 	fmt.Println("Pushing docker image.")
-	d.pushImage()
+	err = d.pushImage()
+
+	if err != nil {
+		return err
+	}
 
 	d.s.cluster = d.loadCluster(d.Env.Cluster)
 	d.s.service, d.s.oldT = d.loadService(d.s.cluster, d.Env.Service)
 
 	fmt.Printf("Beginning deployment to service %s.\n", d.Env.Service)
 	t, err := d.UFO.Deploy(d.s.cluster, d.s.service, d.head)
-	HandleError(err)
+
+	if err != nil {
+		return err
+	}
 
 	d.s.newT = t
 
 	err = d.awaitCompletion()
 
 	if err != nil {
-		HandleError(ErrDeployTimeout)
+		return ErrDeployTimeout
 	}
 
 	fmt.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *d.s.newT.Family, *d.s.newT.Revision)
+
+	return nil
 }
 
-func (d *DeployCmd) buildImage() {
+func (d *DeployCmd) buildImage() error {
 	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryUrl, d.head)
 	cmd := exec.Command("docker", "build", "-f", d.Env.Dockerfile, "--tag", c, ".")
 
@@ -124,15 +153,17 @@ func (d *DeployCmd) buildImage() {
 	if err != nil {
 		fmt.Printf("%v", err)
 		fmt.Printf("%v", string(out))
-		HandleError(ErrDockerBuild)
+		return ErrDockerBuild
 	}
 
 	if d.Options.Verbose {
 		fmt.Printf("%s", string(out))
 	}
+
+	return nil
 }
 
-func (d *DeployCmd) pushImage() {
+func (d *DeployCmd) pushImage() error {
 	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryUrl, d.head)
 	cmd := exec.Command("docker", "push", c)
 
@@ -141,12 +172,14 @@ func (d *DeployCmd) pushImage() {
 	if err != nil {
 		fmt.Printf("%v", err)
 		fmt.Printf("%v", string(out))
-		HandleError(ErrDockerPush)
+		return ErrDockerPush
 	}
 
 	if d.Options.Verbose {
 		fmt.Printf("%s", string(out))
 	}
+
+	return nil
 }
 
 func (d *DeployCmd) awaitCompletion() error {
@@ -160,7 +193,7 @@ func (d *DeployCmd) awaitCompletion() error {
 
 		attempts++
 
-		fmt.Print("Waiting.")
+		fmt.Println("Waiting.")
 		time.Sleep(waitTime)
 	}
 

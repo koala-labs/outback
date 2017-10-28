@@ -23,7 +23,7 @@ const DEFAULT_CONFIG = `{
 const UFO_DIR = ".ufo/"
 const UFO_FILE = "config.json"
 
-func RunInitCommand(path string) {
+func RunInitCommand(path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		fmt.Printf("Creating directory %s\n", path)
 		os.Mkdir(UFO_DIR, 755)
@@ -32,18 +32,20 @@ func RunInitCommand(path string) {
 	// @todo if file not exists
 
 	if _, err := os.Stat(UFO_CONFIG); ! os.IsNotExist(err) {
-		HandleError(ErrConfigFileAlreadyExists)
+		return ErrConfigFileAlreadyExists
 	}
 
 	fmt.Printf("Creating config file %s.\n", UFO_FILE)
 	f, err := os.Create(UFO_CONFIG)
 
 	if err != nil {
-		HandleError(ErrCouldNotCreateConfig)
+		return ErrCouldNotCreateConfig
 	}
 
 	defer f.Close()
 
 	fmt.Println("Writing default config to config file.")
 	fmt.Fprint(f, DEFAULT_CONFIG)
+
+	return nil
 }

@@ -23,31 +23,38 @@ type Config struct {
 	Env []*Environment `json:"environments"`
 }
 
-func LoadConfigFromFile(path string) *Config {
+func LoadConfigFromFile(path string) (*Config, error) {
 	dat, err := ioutil.ReadFile(path)
 
 	if err != nil {
-		HandleError(ErrCouldNotLoadConfig)
+		return nil, ErrCouldNotLoadConfig
 	}
 
-	c := LoadConfig(dat)
+	c, err := LoadConfig(dat)
+
+	if err != nil {
+		return nil, err
+	}
 
 	err = c.validate()
-	HandleError(err)
 
-	return c
+	if err != nil {
+		return nil, err
+	}
+
+	return c, nil
 }
 
-func LoadConfig(config []byte) *Config {
+func LoadConfig(config []byte) (*Config, error) {
 	c := &Config{}
 
 	err := json.Unmarshal(config, c)
 
 	if err != nil {
-		HandleError(ErrCouldNotLoadConfig)
+		return nil, ErrCouldNotLoadConfig
 	}
 
-	return c
+	return c, nil
 }
 
 func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
