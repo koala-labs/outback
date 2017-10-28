@@ -27,8 +27,9 @@ func main() {
 	// @todo support
 	initCommand := flag.NewFlagSet("init", flag.ExitOnError)
 	initLocation := initCommand.String("p", UFO_DIR, "Path to create UFO config directory.")
+	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
+	listConfig := listCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 	//useCommand := flag.NewFlagSet("use", flag.ExitOnError)
-	//listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 
 	commands := map[string]*flag.FlagSet{
 		"deploy": deployCommand,
@@ -59,9 +60,9 @@ func main() {
 		// foo
 	case "init":
 		RunInitCommand(*initLocation)
-	case "use":
-		fallthrough
 	case "list":
+		RunListCommand(LoadConfigFromFile(*listConfig))
+	case "use":
 		fallthrough
 	default:
 		log.Fatalln("Not supported yet.")

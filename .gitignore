@@ -6,3 +6,4 @@ cli/ufo
 cli/application
 
 *.ufo/
+ufo/ufo
