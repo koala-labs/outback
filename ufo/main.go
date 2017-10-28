@@ -6,6 +6,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"fmt"
 )
 
 const UFO_CONFIG = ".ufo/config.json"
@@ -29,9 +30,22 @@ func main() {
 	//useCommand := flag.NewFlagSet("use", flag.ExitOnError)
 	//listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 
+	commands := map[string]*flag.FlagSet{
+		"deploy": deployCommand,
+		"init": initCommand,
+	}
+
 	if len(os.Args) < 2 {
-		log.Println("A subcommand is required.")
-		flag.PrintDefaults()
+		fmt.Println("A subcommand is required.\n")
+		fmt.Println("Usage:\n")
+		fmt.Println("ufo command [arg1] [arg2] ...\n")
+
+		for cmd, set := range commands {
+			fmt.Printf("Usage for `%s`:\n", cmd)
+			set.PrintDefaults()
+			fmt.Println()
+		}
+
 		os.Exit(1)
 	}
 
