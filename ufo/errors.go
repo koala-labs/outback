@@ -7,6 +7,7 @@ import (
 
 // Config Errors
 var (
+	ErrCouldNotCreateConfig = errors.New("Could not create config file.")
 	ErrNoEnvironments = errors.New("No environments configured.")
 )
 

@@ -24,7 +24,8 @@ func main() {
 	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
 
 	// @todo support
-	//initCommand := flag.NewFlagSet("init", flag.ExitOnError)
+	initCommand := flag.NewFlagSet("init", flag.ExitOnError)
+	initLocation := initCommand.String("p", UFO_DIR, "Path to create UFO config directory.")
 	//useCommand := flag.NewFlagSet("use", flag.ExitOnError)
 	//listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 
@@ -43,7 +44,7 @@ func main() {
 		RunDeployCmd(LoadConfigFromFile(*deployConfig), *deployVerbose)
 		// foo
 	case "init":
-		fallthrough
+		RunInitCommand(*initLocation)
 	case "use":
 		fallthrough
 	case "list":
