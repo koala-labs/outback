@@ -8,12 +8,12 @@ import (
 // Config Errors
 var (
 	ErrCouldNotCreateConfig = errors.New("Could not create config file.")
+	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location.")
 	ErrNoEnvironments = errors.New("No environments configured.")
 )
 
 var (
 	ErrCouldNotLoadConfig = errors.New(fmt.Sprintf("Could not load config file. Please make sure it is located in %s.", UFO_CONFIG))
-	ErrEnvironmentForBranchDoesNotExist = errors.New("Could not find environment for current branch.")
 	ErrGitError = errors.New("Could not read git information. Please make sure you have git installed and are in a git repository.")
 	ErrDeployTimeout = errors.New("Timed out waiting for task to start.")
 	ErrDockerBuild = errors.New("Could not build docker image.")

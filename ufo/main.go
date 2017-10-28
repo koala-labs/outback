@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"os"
 	"os/signal"
 	"syscall"
@@ -23,17 +22,19 @@ func main() {
 	deployCommand := flag.NewFlagSet("deploy", flag.ExitOnError)
 	deployConfig := deployCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
+	deployBranch := deployCommand.String("b", EMPTY_VALUE, "Branch to deploy.")
 
 	// @todo support
 	initCommand := flag.NewFlagSet("init", flag.ExitOnError)
 	initLocation := initCommand.String("p", UFO_DIR, "Path to create UFO config directory.")
+
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfig := listCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 	//useCommand := flag.NewFlagSet("use", flag.ExitOnError)
 
 	commands := map[string]*flag.FlagSet{
 		"deploy": deployCommand,
-		"init": initCommand,
+		"init":   initCommand,
 	}
 
 	if len(os.Args) < 2 {
@@ -56,7 +57,10 @@ func main() {
 	case "deploy":
 		deployCommand.Parse(os.Args[2:])
 
-		RunDeployCmd(LoadConfigFromFile(*deployConfig), *deployVerbose)
+		RunDeployCmd(LoadConfigFromFile(*deployConfig), DeployOptions{
+			Verbose:        *deployVerbose,
+			OverrideBranch: *deployBranch,
+		})
 		// foo
 	case "init":
 		RunInitCommand(*initLocation)
@@ -65,7 +69,8 @@ func main() {
 	case "use":
 		fallthrough
 	default:
-		log.Fatalln("Not supported yet.")
+		fmt.Println("Not supported yet.")
+		os.Exit(1)
 	}
 }
 
@@ -79,7 +84,7 @@ func HandleError(err error) {
 		return
 	}
 
-	log.Printf("\nEncountered an error: %s\n", err.Error())
+	fmt.Printf("\nEncountered an error: %s\n", err.Error())
 
 	os.Exit(1)
 }

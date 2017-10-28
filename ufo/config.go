@@ -57,7 +57,7 @@ func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
 		}
 	}
 
-	return nil, ErrEnvironmentForBranchDoesNotExist
+	return nil, errors.New(fmt.Sprintf("Could not find environment for chosen branch: %s.", branch))
 }
 
 func (c *Config) validate() error {

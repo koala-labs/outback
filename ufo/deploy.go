@@ -5,10 +5,14 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 	"time"
-	"log"
 	"fmt"
 	"strings"
 )
+
+type DeployOptions struct {
+	Verbose        bool
+	OverrideBranch string
+}
 
 type DeployState struct {
 	cluster *ecs.Cluster
@@ -18,7 +22,8 @@ type DeployState struct {
 }
 
 type DeployCmd struct {
-	verbose bool
+	Options DeployOptions
+	//verbose bool
 	s       *DeployState
 	c       *Config
 	UFO     *ufo.UFO
@@ -51,13 +56,17 @@ func getCurrentBranch() string {
 	return strings.Trim(string(r), "\n")
 }
 
-func RunDeployCmd(c *Config, verbose bool) {
+func RunDeployCmd(c *Config, options DeployOptions) {
 	d := &DeployCmd{
-		verbose: verbose,
-		branch: getCurrentBranch(),
-		head: getCurrentHead(),
-		c:    c,
-		s:    &DeployState{},
+		Options: options,
+		branch:  options.OverrideBranch,
+		head:    getCurrentHead(),
+		c:       c,
+		s:       &DeployState{},
+	}
+
+	if d.Options.OverrideBranch == EMPTY_VALUE {
+		d.branch = getCurrentBranch()
 	}
 
 	e, err := c.GetEnvironmentByBranch(d.branch)
@@ -79,19 +88,19 @@ func (d *DeployCmd) initUFO() {
 }
 
 func (d *DeployCmd) deploy() {
-	log.Printf("Preparing to deploy branch %s to service %s on cluster %s.\n", d.Env.Branch, d.Env.Service, d.Env.Cluster)
+	fmt.Printf("Preparing to deploy branch %s to service %s on cluster %s.\n", d.Env.Branch, d.Env.Service, d.Env.Cluster)
 
 	// Push an image to docker repo
-	log.Println("Building docker image.")
+	fmt.Println("Building docker image.")
 	d.buildImage()
 
-	log.Println("Pushing docker image.")
+	fmt.Println("Pushing docker image.")
 	d.pushImage()
 
 	d.s.cluster = d.loadCluster(d.Env.Cluster)
 	d.s.service, d.s.oldT = d.loadService(d.s.cluster, d.Env.Service)
 
-	log.Printf("Beginning deployment to service %s.\n", d.Env.Service)
+	fmt.Printf("Beginning deployment to service %s.\n", d.Env.Service)
 	t, err := d.UFO.Deploy(d.s.cluster, d.s.service, d.head)
 	HandleError(err)
 
@@ -103,7 +112,7 @@ func (d *DeployCmd) deploy() {
 		HandleError(ErrDeployTimeout)
 	}
 
-	log.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *d.s.newT.Family, *d.s.newT.Revision)
+	fmt.Printf("Successfully deployed. Your new task definition is %s:%d.\n", *d.s.newT.Family, *d.s.newT.Revision)
 }
 
 func (d *DeployCmd) buildImage() {
@@ -113,13 +122,13 @@ func (d *DeployCmd) buildImage() {
 	out, err := cmd.Output()
 
 	if err != nil {
-		log.Printf("%v", err)
-		log.Printf("%v", string(out))
+		fmt.Printf("%v", err)
+		fmt.Printf("%v", string(out))
 		HandleError(ErrDockerBuild)
 	}
 
-	if d.verbose {
-		log.Printf("%s", string(out))
+	if d.Options.Verbose {
+		fmt.Printf("%s", string(out))
 	}
 }
 
@@ -130,13 +139,13 @@ func (d *DeployCmd) pushImage() {
 	out, err := cmd.Output()
 
 	if err != nil {
-		log.Printf("%v", err)
-		log.Printf("%v", string(out))
+		fmt.Printf("%v", err)
+		fmt.Printf("%v", string(out))
 		HandleError(ErrDockerPush)
 	}
 
-	if d.verbose {
-		log.Printf("%s", string(out))
+	if d.Options.Verbose {
+		fmt.Printf("%s", string(out))
 	}
 }
 
@@ -151,7 +160,7 @@ func (d *DeployCmd) awaitCompletion() error {
 
 		attempts++
 
-		log.Print("Waiting.")
+		fmt.Print("Waiting.")
 		time.Sleep(waitTime)
 	}
 
