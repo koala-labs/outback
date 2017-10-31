@@ -73,7 +73,7 @@ func main() {
 		HandleError(err)
 		// foo
 	case "init":
-		HandleError(RunInitCommand(*initLocation))
+		HandleError(RunInitCommand(*initLocation, osFS{}))
 	case "list":
 		config, err := LoadConfigFromFile(*listConfig)
 

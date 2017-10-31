@@ -23,20 +23,45 @@ const DEFAULT_CONFIG = `{
 const UFO_DIR = ".ufo/"
 const UFO_FILE = "config.json"
 
-func RunInitCommand(path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+var fs fileSystem = osFS{}
+
+type fileSystem interface {
+	//Open(name string) (file, error)
+	Stat(name string) (os.FileInfo, error)
+	Mkdir(name string, perm os.FileMode) error
+	IsNotExist(err error) bool
+	Create(name string) (*os.File, error)
+}
+
+//type file interface {
+//	io.Closer
+//	io.Reader
+//	io.ReaderAt
+//	io.Seeker
+//	Stat() (os.FileInfo, error)
+//}
+
+// osFS implements fileSystem using the local disk.
+type osFS struct {}
+
+func (osFS) Open(name string) (*os.File, error)        { return os.Open(name) }
+func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+func (osFS) Mkdir(name string, perm os.FileMode) error { return os.Mkdir(name, perm) }
+func (osFS) IsNotExist(err error) bool { return os.IsNotExist(err) }
+func (osFS) Create(name string) (*os.File, error) { return os.Create(name) }
+
+func RunInitCommand(path string, fs fileSystem) error {
+	if _, err := fs.Stat(path); fs.IsNotExist(err) {
 		fmt.Printf("Creating directory %s\n", path)
-		os.Mkdir(UFO_DIR, 755)
+		fs.Mkdir(UFO_DIR, 755)
 	}
 
-	// @todo if file not exists
-
-	if _, err := os.Stat(UFO_CONFIG); ! os.IsNotExist(err) {
+	if _, err := fs.Stat(UFO_CONFIG); ! fs.IsNotExist(err) {
 		return ErrConfigFileAlreadyExists
 	}
 
 	fmt.Printf("Creating config file %s.\n", UFO_FILE)
-	f, err := os.Create(UFO_CONFIG)
+	f, err := fs.Create(UFO_CONFIG)
 
 	if err != nil {
 		return ErrCouldNotCreateConfig
