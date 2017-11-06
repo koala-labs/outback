@@ -9,9 +9,11 @@ var (
 	ErrCouldNotCreateConfig    = errors.New("Could not create config file.")
 	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location.")
 	ErrNoEnvironments          = errors.New("No environments configured.")
+	ErrNoGitIgnore             = errors.New("No .gitignore exists.")
 )
 
 var (
+	ErrNoWorkingDirectory = errors.New("Could not resolve current working directory.")
 	ErrCouldNotLoadConfig = errors.New("Could not load config file, please make sure it is valid JSON.")
 	ErrGitError           = errors.New("Could not read git information. Please make sure you have git installed and are in a git repository.")
 	ErrDeployTimeout      = errors.New("Timed out waiting for task to start.")

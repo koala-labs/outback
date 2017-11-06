@@ -8,9 +8,7 @@ import (
 	"fmt"
 )
 
-const UFO_CONFIG = ".ufo/config.json"
-
-func main() {
+func registerSigHandler() {
 	sigs := make(chan os.Signal, 1)
 
 	signal.Notify(sigs, syscall.SIGINT)
@@ -18,20 +16,30 @@ func main() {
 	go func() {
 		<-sigs
 	}()
+}
+
+func main() {
+	registerSigHandler()
+
+	CWD, err := os.Getwd()
+
+	if err != nil {
+		HandleError(ErrNoWorkingDirectory)
+	}
 
 	// Deploy command setup
 	deployCommand := flag.NewFlagSet("deploy", flag.ExitOnError)
-	deployConfig := deployCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	deployConfig := deployCommand.String("c", CWD + UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
 	deployBranch := deployCommand.String("b", EMPTY_VALUE, "Branch to deploy.")
 
 	// Init command setup
 	initCommand := flag.NewFlagSet("init", flag.ExitOnError)
-	initLocation := initCommand.String("p", UFO_DIR, "Path to create UFO config directory.")
+	initLocation := initCommand.String("p", CWD, "Path to create UFO config directory.")
 
 	// List command setup
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
-	listConfig := listCommand.String("c", UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	listConfig := listCommand.String("c", CWD + UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 
 	commands := map[string]*flag.FlagSet{
 		"deploy": deployCommand,

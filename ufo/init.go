@@ -20,8 +20,14 @@ const DEFAULT_CONFIG = `{
 }
 `
 
-const UFO_DIR = ".ufo/"
-const UFO_FILE = "config.json"
+const GIT_IGNORE = `
+/* UFO Config */
+.ufo/
+`
+
+const UFO_CONFIG = "/.ufo/config.json"
+const UFO_DIR = "/.ufo/"
+const UFO_FILE = "/config.json"
 
 var fs fileSystem = osFS{}
 
@@ -51,26 +57,61 @@ func (osFS) IsNotExist(err error) bool { return os.IsNotExist(err) }
 func (osFS) Create(name string) (*os.File, error) { return os.Create(name) }
 
 func RunInitCommand(path string, fs fileSystem) error {
-	if _, err := fs.Stat(path); fs.IsNotExist(err) {
-		fmt.Printf("Creating directory %s\n", path)
-		fs.Mkdir(UFO_DIR, 755)
+	createUFODirectory(path + UFO_DIR, fs)
+
+	f, err := createConfigFile(path + UFO_CONFIG, fs)
+
+	if err == nil {
+		defer f.Close()
+
+		fmt.Println("Writing default config to config file.")
+		fmt.Fprint(f, DEFAULT_CONFIG)
 	}
 
-	if _, err := fs.Stat(UFO_CONFIG); ! fs.IsNotExist(err) {
-		return ErrConfigFileAlreadyExists
+	addUFOToGitignore(path)
+
+	return nil
+}
+
+func createUFODirectory(path string, fs fileSystem) {
+	if _, err := fs.Stat(path); fs.IsNotExist(err) {
+		fmt.Printf("Creating directory %s\n", path)
+		fs.Mkdir(path, os.ModePerm)
+	}
+}
+
+func createConfigFile(path string, fs fileSystem) (*os.File, error) {
+	if _, err := fs.Stat(path); ! fs.IsNotExist(err) {
+		return nil, ErrConfigFileAlreadyExists
 	}
 
 	fmt.Printf("Creating config file %s.\n", UFO_FILE)
-	f, err := fs.Create(UFO_CONFIG)
+	f, err := fs.Create(path)
 
 	if err != nil {
-		return ErrCouldNotCreateConfig
+		return nil, ErrCouldNotCreateConfig
+	}
+
+	return f, nil
+}
+
+func addUFOToGitignore(path string) error {
+	gitIgnore := path + "/.gitignore"
+
+	if _, err := fs.Stat(gitIgnore); fs.IsNotExist(err) {
+		return ErrNoGitIgnore
+	}
+
+	f, err := os.OpenFile(gitIgnore, os.O_APPEND|os.O_WRONLY, 0600)
+
+	if err != nil {
+		return err
 	}
 
 	defer f.Close()
 
-	fmt.Println("Writing default config to config file.")
-	fmt.Fprint(f, DEFAULT_CONFIG)
+	fmt.Println("Adding UFO config to .gitignore.")
+	_, err = f.WriteString(GIT_IGNORE)
 
-	return nil
+	return err
 }
