@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+)
 
 func RunListCommand(c *Config) {
 	PrintConfigInfo(c)
@@ -22,9 +25,15 @@ func PrintInfoForAllEnvironments(c *Config) {
 }
 
 func PrintInfoForEnvironment(e *Environment) {
+	CWD, err := os.Getwd()
+
+	if err != nil {
+		HandleError(ErrNoWorkingDirectory)
+	}
+
 	fmt.Printf("Branch:     %s\n", e.Branch)
 	fmt.Printf("Region:     %s\n", e.Region)
 	fmt.Printf("Cluster:    %s\n", e.Cluster)
 	fmt.Printf("Service:    %s\n", e.Service)
-	fmt.Printf("Dockerfile: %s\n", e.Dockerfile)
+	fmt.Printf("Dockerfile: %s\n", CWD + "/" + e.Dockerfile)
 }
