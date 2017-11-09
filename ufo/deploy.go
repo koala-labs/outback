@@ -9,6 +9,12 @@ import (
 	"strings"
 )
 
+type logger struct {}
+
+func (l *logger) Printf(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
+}
+
 type DeployOptions struct {
 	Verbose        bool
 	OverrideBranch string
@@ -23,7 +29,6 @@ type DeployState struct {
 
 type DeployCmd struct {
 	Options DeployOptions
-	//verbose bool
 	s       *DeployState
 	c       *Config
 	UFO     *ufo.UFO
@@ -62,7 +67,6 @@ func RunDeployCmd(c *Config, options DeployOptions) error {
 	d := &DeployCmd{
 		Options: options,
 		branch:  options.OverrideBranch,
-		//head:    getCurrentHead(),
 		c:       c,
 		s:       &DeployState{},
 	}
@@ -100,7 +104,7 @@ func (d *DeployCmd) initUFO() {
 		Region:  &d.Env.Region,
 	}
 
-	d.UFO = ufo.Fly(c)
+	d.UFO = ufo.Fly(c, &logger{})
 }
 
 func (d *DeployCmd) deploy() error {
