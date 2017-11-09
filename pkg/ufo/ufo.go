@@ -5,14 +5,15 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecr"
-	log "github.com/sirupsen/logrus"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"regexp"
 	"fmt"
 	"runtime"
 )
 
-// @todo set up log file
+type Logger interface {
+	Printf(string, ...interface{})
+}
 
 type UFOConfig struct {
 	Profile *string
@@ -26,6 +27,7 @@ type UFOState struct {
 }
 
 type UFO struct {
+	l Logger
 	State *UFOState
 	Session *session.Session
 	ECS *ecs.ECS
@@ -33,25 +35,24 @@ type UFO struct {
 }
 
 // Alias for CreateUFO
-func Fly(appConfig UFOConfig) *UFO {
-	return CreateUFO(appConfig)
+func Fly(appConfig UFOConfig, log Logger) *UFO {
+	return CreateUFO(appConfig, log)
 }
 
 // Create a UFO session and connect to AWS to create a session
-func CreateUFO(appConfig UFOConfig) *UFO {
+func CreateUFO(appConfig UFOConfig, log Logger) *UFO {
 	awsSession := session.Must(session.NewSessionWithOptions(session.Options{
 		Config:  aws.Config{Region: appConfig.Region},
 		Profile: *appConfig.Profile,
 	}))
 
 	app := &UFO{
+		l: log,
 		Session: awsSession,
 		ECS: ecs.New(awsSession),
 		ECR: ecr.New(awsSession),
 		State: &UFOState{},
 	}
-
-	log.SetFormatter(&log.JSONFormatter{})
 
 	return app
 }
@@ -79,7 +80,7 @@ func (u *UFO) logError(err error) {
 	parsed, ok := err.(awserr.Error)
 
 	if ! ok {
-		log.Errorf("Unable to parse error: %v.\n", err)
+		u.l.Printf("Unable to parse error: %v.\n", err)
 	}
 
 	pc := make([]uintptr, 15)
@@ -87,11 +88,7 @@ func (u *UFO) logError(err error) {
 	frames := runtime.CallersFrames(pc[:n])
 	frame, _ := frames.Next()
 
-	log.WithFields(log.Fields{
-		"code": parsed.Code(),
-		"error": parsed.Error(),
-		"frame": fmt.Sprintf("%s,:%d %s\n", frame.File, frame.Line, frame.Function),
-	}).Error("Received an error from AWS.")
+	u.l.Printf("Code: %s. %s\n %s,:%d %s\n", parsed.Code(), parsed.Error(), frame.File, frame.Line, frame.Function)
 }
 
 // View all ECS clusters in the account
@@ -101,7 +98,7 @@ func (u *UFO) Clusters() ([]string, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrFailedToListClusters
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
@@ -124,7 +121,7 @@ func (u *UFO) Services(c *ecs.Cluster) ([]string, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrFailedToListServices
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
@@ -149,7 +146,7 @@ func (u *UFO) RunningTasks(c *ecs.Cluster, s *ecs.Service) ([]*string, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrFailedToListRunningTasks
 	}
 
 	return result.TaskArns, nil
@@ -166,7 +163,11 @@ func (u *UFO) GetCluster(clusterName string) (*ecs.Cluster, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRetrieveCluster
+	}
+
+	if len(res.Clusters) < 1 {
+		return nil, ErrClusterNotFound
 	}
 
 	return res.Clusters[0], nil
@@ -184,7 +185,11 @@ func (u *UFO) GetService(c *ecs.Cluster, service string) (*ecs.Service, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRetrieveService
+	}
+
+	if len(res.Services) < 1 {
+		return nil, ErrServiceNotFound
 	}
 
 	return res.Services[0], nil
@@ -199,7 +204,7 @@ func (u *UFO) GetTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskDefini
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRetrieveTaskDefinition
 	}
 
 	return result.TaskDefinition, nil
@@ -216,7 +221,7 @@ func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasksOutpu
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRetrieveTasks
 	}
 
 	return result, nil
@@ -237,7 +242,7 @@ func (u *UFO) GetImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) {
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRetrieveImages
 	}
 
 	images := make([]*ecr.ImageDetail, 0)
@@ -260,7 +265,11 @@ func (u *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
 	if err != nil {
 		u.logError(err)
 
-		return "", err
+		return "", ErrCouldNotRetrieveTaskDefinition
+	}
+
+	if len(result.TaskDefinition.ContainerDefinitions) < 1 {
+		return "", ErrInvalidTaskDefinition
 	}
 
 	repo := result.TaskDefinition.ContainerDefinitions[0].Image
@@ -278,7 +287,7 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	if err != nil {
 		u.logError(err)
 
-		return nil, err // @todo simplify return
+		return nil, err
 	}
 
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
@@ -290,7 +299,7 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRegisterTaskDefinition
 	}
 
 	return result.TaskDefinition, nil
@@ -329,7 +338,7 @@ func (u *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinitio
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotUpdateService
 	}
 
 	return result, nil
@@ -345,7 +354,7 @@ func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskD
 		return nil, err
 	}
 
-	u.UpdateService(c, s, t)
+	_, err = u.UpdateService(c, s, t)
 
-	return t, nil
+	return t, err
 }
