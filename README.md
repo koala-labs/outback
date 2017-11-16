@@ -16,5 +16,11 @@
 
 ## Build CLI
 
-1. `cd cli`
-1. `go build -o ufo && ./ufo -profile=default -region=us-west-1`
+1. `cd ufo`
+1. `go build -o ufo`
+1. `./ufo <command> <args>`
+
+## Installing CLI
+1. Install go `brew install go`
+1. Install the UFO binary `go install gitlab.fuzzhq.com/Web-Ops/ufo/ufo`
+    * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
