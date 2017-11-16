@@ -1,14 +1,15 @@
 package ufo
 
 import (
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/service/ecr"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"regexp"
 	"fmt"
+	"regexp"
 	"runtime"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
 type Logger interface {
@@ -17,21 +18,21 @@ type Logger interface {
 
 type UFOConfig struct {
 	Profile *string
-	Region *string
+	Region  *string
 }
 
 type UFOState struct {
-	Cluster *ecs.Cluster
-	Service *ecs.Service
+	Cluster        *ecs.Cluster
+	Service        *ecs.Service
 	TaskDefinition *ecs.TaskDefinition
 }
 
 type UFO struct {
-	l Logger
-	State *UFOState
+	l       Logger
+	State   *UFOState
 	Session *session.Session
-	ECS *ecs.ECS
-	ECR *ecr.ECR
+	ECS     *ecs.ECS
+	ECR     *ecr.ECR
 }
 
 // Alias for CreateUFO
@@ -47,11 +48,11 @@ func CreateUFO(appConfig UFOConfig, log Logger) *UFO {
 	}))
 
 	app := &UFO{
-		l: log,
+		l:       log,
 		Session: awsSession,
-		ECS: ecs.New(awsSession),
-		ECR: ecr.New(awsSession),
-		State: &UFOState{},
+		ECS:     ecs.New(awsSession),
+		ECR:     ecr.New(awsSession),
+		State:   &UFOState{},
 	}
 
 	return app
@@ -79,7 +80,7 @@ func (u *UFO) UseTaskDefinition(t *ecs.TaskDefinition) {
 func (u *UFO) logError(err error) {
 	parsed, ok := err.(awserr.Error)
 
-	if ! ok {
+	if !ok {
 		u.l.Printf("Unable to parse error: %v.\n", err)
 	}
 
@@ -287,26 +288,29 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, err // @todo simplify return
 	}
 
+	newTaskDef := u.UpdateTaskDefinitionImage(*t, version)
+
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
-		// Update the task definition to use the new docker image via updateTaskDefinition
-		ContainerDefinitions: u.UpdateTaskDefinitionImage(*t, version),
-		Family:               t.Family,
+		// Update the task definition to use the new docker image via UpdateTaskDefinitionImage
+		ContainerDefinitions: newTaskDef.ContainerDefinitions,
+		Family:               newTaskDef.Family,
+		Volumes:              newTaskDef.Volumes,
 	})
 
 	if err != nil {
 		u.logError(err)
 
-		return nil, ErrCouldNotRegisterTaskDefinition
+		return nil, err
 	}
 
 	return result.TaskDefinition, nil
 }
 
 // Copy a task definition and update its image tag
-func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) []*ecs.ContainerDefinition {
+func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) ecs.TaskDefinition {
 	r := regexp.MustCompile(`(\S+):`)
 	currentImage := *t.ContainerDefinitions[0].Image
 
@@ -315,7 +319,7 @@ func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) []
 
 	*t.ContainerDefinitions[0].Image = newImage
 
-	return t.ContainerDefinitions
+	return t
 }
 
 // Parse an image URL:tag and read its repo name
