@@ -3,9 +3,10 @@ package main
 import (
 	"flag"
 	"os"
+
+	"fmt"
 	"os/signal"
 	"syscall"
-	"fmt"
 )
 
 func registerSigHandler() {
@@ -29,7 +30,7 @@ func main() {
 
 	// Deploy command setup
 	deployCommand := flag.NewFlagSet("deploy", flag.ExitOnError)
-	deployConfig := deployCommand.String("c", CWD + UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	deployConfig := deployCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
 	deployBranch := deployCommand.String("b", EMPTY_VALUE, "Branch to deploy.")
 
@@ -39,7 +40,7 @@ func main() {
 
 	// List command setup
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
-	listConfig := listCommand.String("c", CWD + UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	listConfig := listCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 
 	commands := map[string]*flag.FlagSet{
 		"deploy": deployCommand,

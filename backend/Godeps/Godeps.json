@@ -1,5 +1,5 @@
 {
-	"ImportPath": "gitlab.com/kacosta/ufo/backend",
+	"ImportPath": "gitlab.fuzzhq.com/Web-Ops/ufo/backend",
 	"GoVersion": "go1.9",
 	"GodepVersion": "v79",
 	"Deps": [
@@ -200,11 +200,28 @@
 			"Rev": "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
 		},
 		{
+			"ImportPath": "github.com/sirupsen/logrus",
+			"Comment": "v1.0.3-11-g89742ae",
+			"Rev": "89742aefa4b206dcf400792f3bd35b542998eb3b"
+		},
+		{
 			"ImportPath": "github.com/ugorji/go/codec",
 			"Rev": "8c0409fcbb70099c748d71f714529204975f6c3f"
 		},
 		{
+			"ImportPath": "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo",
+			"Rev": "dcf985935462c8ef97091cf4c23e258c2b222000"
+		},
+		{
+			"ImportPath": "golang.org/x/crypto/ssh/terminal",
+			"Rev": "2509b142fb2b797aa7587dad548f113b2c0f20ce"
+		},
+		{
 			"ImportPath": "golang.org/x/sys/unix",
+			"Rev": "062cd7e4e68206d8bab9b18396626e855c992658"
+		},
+		{
+			"ImportPath": "golang.org/x/sys/windows",
 			"Rev": "062cd7e4e68206d8bab9b18396626e855c992658"
 		},
 		{

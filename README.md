@@ -16,7 +16,7 @@
 
 ## Build CLI
 
-1. `cd fuo`
+1. `cd ufo`
 1. `go build -o ufo`
 1. `./ufo <command> <args>`
 
