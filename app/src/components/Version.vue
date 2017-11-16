@@ -26,7 +26,7 @@ export default {
     sortedVersions() {
       return this.versions.sort((x, y) => {
         return getTime(y.ImagePushedAt) - getTime(x.ImagePushedAt);
-      });
+      }).slice(0, 5);
     },
   },
 };
