@@ -295,9 +295,15 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via UpdateTaskDefinitionImage
-		ContainerDefinitions: newTaskDef.ContainerDefinitions,
-		Family:               newTaskDef.Family,
-		Volumes:              newTaskDef.Volumes,
+		Cpu:                     newTaskDef.Cpu,
+		Family:                  newTaskDef.Family,
+		Memory:                  newTaskDef.Memory,
+		Volumes:                 newTaskDef.Volumes,
+		NetworkMode:             newTaskDef.NetworkMode,
+		ExecutionRoleArn:        newTaskDef.ExecutionRoleArn,
+		TaskRoleArn:             newTaskDef.TaskRoleArn,
+		ContainerDefinitions:    newTaskDef.ContainerDefinitions,
+		RequiresCompatibilities: newTaskDef.RequiresCompatibilities,
 	})
 
 	if err != nil {

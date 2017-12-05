@@ -5,9 +5,16 @@ package main
 
 import (
 	"flag"
+	"fmt"
 
 	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
+
+type logger struct{}
+
+func (l *logger) Printf(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
+}
 
 func main() {
 	profile := flag.String("profile", "default", "a string")
@@ -19,7 +26,7 @@ func main() {
 		Region:  region,
 	}
 
-	u := ufo.Fly(c)
+	u := ufo.Fly(c, &logger{})
 
 	router := routes(u)
 	router.Run()
