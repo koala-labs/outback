@@ -41,13 +41,6 @@ func BinaryFileSystem(root string) *binaryFileSystem {
 	}
 }
 
-// UFOQuery Struct for passing query strings
-type UFOQuery struct {
-	Cluster        string `form:"cluster"`
-	Service        string `form:"service"`
-	TaskDefinition string `form:"definition"`
-}
-
 // UFOJson Struct for passing json body
 type UFOJson struct {
 	Cluster string `json:"cluster" binding:"required"`
@@ -64,7 +57,6 @@ type AppState struct {
 }
 
 func routes(UFO *ufo.UFO) *gin.Engine {
-	var ufoQuery UFOQuery
 	var ufoJSON UFOJson
 
 	s := &AppState{}
@@ -87,9 +79,7 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 	routes.Use(static.Serve("/", BinaryFileSystem("../app/dist/")))
 
 	routes.GET("/ufo/status", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) == nil {
-			PollForStatus(c.Writer, c.Request, UFO, s)
-		}
+		PollForStatus(c.Writer, c.Request, UFO, s)
 	})
 
 	routes.GET("/ufo/clusters", func(c *gin.Context) {
@@ -101,11 +91,9 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 	})
 
 	routes.GET("/ufo/services", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) != nil {
-			return
-		}
+		queryCluster := c.Query("cluster")
 
-		cluster, err := UFO.GetCluster(ufoQuery.Cluster)
+		cluster, err := UFO.GetCluster(queryCluster)
 
 		HandleError(err)
 
@@ -119,11 +107,9 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 	})
 
 	routes.GET("/ufo/service", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) != nil {
-			return
-		}
+		queryService := c.Query("service")
 
-		service, err := UFO.GetService(s.c, ufoQuery.Service)
+		service, err := UFO.GetService(s.c, queryService)
 
 		HandleError(err)
 
@@ -133,11 +119,9 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 	})
 
 	routes.GET("/ufo/versions", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) != nil {
-			return
-		}
+		queryService := c.Query("service")
 
-		service, err := UFO.GetService(s.c, ufoQuery.Service)
+		service, err := UFO.GetService(s.c, queryService)
 
 		HandleError(err)
 
@@ -157,10 +141,6 @@ func routes(UFO *ufo.UFO) *gin.Engine {
 	})
 
 	routes.GET("/ufo/commit", func(c *gin.Context) {
-		if c.BindQuery(&ufoQuery) != nil {
-			return
-		}
-
 		commit, err := UFO.GetLastDeployedCommit(*s.s.TaskDefinition)
 
 		HandleError(err)
