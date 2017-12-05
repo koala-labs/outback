@@ -7,3 +7,4 @@ cli/application
 
 *.ufo/
 ufo/ufo
+vendor/
