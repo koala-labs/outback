@@ -20,4 +20,6 @@ var (
 
 	ErrClusterNotFound = errors.New("Cluster was not found.")
 	ErrServiceNotFound = errors.New("Service was not found.")
+
+	ErrCouldNotRunTask = errors.New("Desired task culd not be run")
 )
