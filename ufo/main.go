@@ -42,6 +42,12 @@ func main() {
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfig := listCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 
+	// Run task setup
+	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
+	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run one off task.")
+	runTaskBranch := runTaskCommand.String("b", EMPTY_VALUE, "Branch respresentative of environment to run task on")
+	runTaskConfig := runTaskCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+
 	commands := map[string]*flag.FlagSet{
 		"deploy": deployCommand,
 		"init":   initCommand,
@@ -81,6 +87,21 @@ func main() {
 
 		HandleError(err)
 		// foo
+	case "run-task":
+		runTaskCommand.Parse(os.Args[2:])
+
+		config, err := LoadConfigFromFile(*runTaskConfig)
+
+		if err != nil {
+			HandleError(err)
+		}
+
+		err = RunTask(config, TaskOptions{
+			Command:        *runTaskCommandOverride,
+			OverrideBranch: *runTaskBranch,
+		})
+
+		HandleError(err)
 	case "init":
 		HandleError(RunInitCommand(*initLocation, osFS{}))
 	case "list":

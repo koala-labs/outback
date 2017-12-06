@@ -12,7 +12,7 @@ func RunListCommand(c *Config) {
 
 func PrintConfigInfo(c *Config) {
 	fmt.Printf("AWS Profile:            %s\n", c.Profile)
-	fmt.Printf("ECR Repository:         %s\n", c.ImageRepositoryUrl)
+	fmt.Printf("ECR Repository:         %s\n\n", c.ImageRepositoryUrl)
 	fmt.Printf("Number of environments: %d\n", len(c.Env))
 }
 
@@ -20,7 +20,7 @@ func PrintInfoForAllEnvironments(c *Config) {
 	for _, env := range c.Env {
 		fmt.Println("================================")
 		PrintInfoForEnvironment(env)
-		fmt.Println("================================\n")
+		fmt.Println("================================")
 	}
 }
 
@@ -35,5 +35,5 @@ func PrintInfoForEnvironment(e *Environment) {
 	fmt.Printf("Region:     %s\n", e.Region)
 	fmt.Printf("Cluster:    %s\n", e.Cluster)
 	fmt.Printf("Service:    %s\n", e.Service)
-	fmt.Printf("Dockerfile: %s\n", CWD + "/" + e.Dockerfile)
+	fmt.Printf("Dockerfile: %s\n", CWD+"/"+e.Dockerfile)
 }

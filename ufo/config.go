@@ -2,25 +2,25 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"errors"
 	"fmt"
+	"io/ioutil"
 )
 
 const EMPTY_VALUE = ""
 
 type Environment struct {
-	Branch string `json:"branch"`
-	Region string `json:"region"`
-	Cluster string `json:"cluster"`
-	Service string `json:"service"`
+	Branch     string `json:"branch"`
+	Region     string `json:"region"`
+	Cluster    string `json:"cluster"`
+	Service    string `json:"service"`
 	Dockerfile string `json:"dockerfile"`
 }
 
 type Config struct {
-	Profile string
-	ImageRepositoryUrl string `json:"image_repository_url"`
-	Env []*Environment `json:"environments"`
+	Profile            string
+	ImageRepositoryUrl string         `json:"image_repository_url"`
+	Env                []*Environment `json:"environments"`
 }
 
 func LoadConfigFromFile(path string) (*Config, error) {
@@ -58,6 +58,7 @@ func LoadConfig(config []byte) (*Config, error) {
 }
 
 func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
+	fmt.Println(branch)
 	for _, env := range c.Env {
 		if env.Branch == branch {
 			return env, nil
@@ -69,7 +70,7 @@ func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
 
 func (c *Config) validate() error {
 	req := map[string]string{
-		"profile": c.Profile,
+		"profile":              c.Profile,
 		"image_repository_url": c.ImageRepositoryUrl,
 	}
 
@@ -85,8 +86,8 @@ func (c *Config) validate() error {
 
 	for _, env := range c.Env {
 		envReqs := map[string]string{
-			"branch": env.Branch,
-			"region": env.Region,
+			"branch":  env.Branch,
+			"region":  env.Region,
 			"cluster": env.Cluster,
 			"service": env.Service,
 		}
