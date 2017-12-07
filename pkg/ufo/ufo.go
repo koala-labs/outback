@@ -371,20 +371,14 @@ func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskD
 
 // RunTask runs a specified task in a cluster
 func (u *UFO) RunTask(c *ecs.Cluster, t *ecs.TaskDefinition, cmd string) (*ecs.RunTaskOutput, error) {
-	containerOverrides := make([]*ecs.ContainerOverride, 0)
-	containerOverrides = append(containerOverrides, &ecs.ContainerOverride{})
-	containerOverrides[0].Command = []*string{&cmd}
-	containerOverrides[0].Name = t.ContainerDefinitions[0].Name
-
-	fmt.Println(*c.ClusterName)
-	fmt.Println(*t.TaskDefinitionArn)
-	fmt.Println(containerOverrides[0])
-
 	result, err := u.ECS.RunTask(&ecs.RunTaskInput{
 		Cluster:        c.ClusterName,
 		TaskDefinition: t.TaskDefinitionArn,
 		Overrides: &ecs.TaskOverride{
-			ContainerOverrides: containerOverrides,
+			ContainerOverrides: []*ecs.ContainerOverride{&ecs.ContainerOverride{
+				Command: []*string{&cmd},
+				Name:    t.ContainerDefinitions[0].Name,
+			}},
 		},
 	})
 
