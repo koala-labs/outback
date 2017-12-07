@@ -44,14 +44,15 @@ func main() {
 
 	// Run task setup
 	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
-	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run one off task.")
+	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run as a one off task. e.g. -o 'echo foo'")
 	runTaskBranch := runTaskCommand.String("b", EMPTY_VALUE, "Branch respresentative of environment to run task on")
 	runTaskConfig := runTaskCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
 
 	commands := map[string]*flag.FlagSet{
-		"deploy": deployCommand,
-		"init":   initCommand,
-		"list":   listCommand,
+		"deploy":   deployCommand,
+		"init":     initCommand,
+		"list":     listCommand,
+		"run-task": runTaskCommand,
 	}
 
 	if len(os.Args) < 2 {
