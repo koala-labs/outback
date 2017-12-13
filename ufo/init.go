@@ -1,8 +1,10 @@
 package main
 
 import (
-	"os"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
 )
 
 const DEFAULT_CONFIG = `{
@@ -13,8 +15,8 @@ const DEFAULT_CONFIG = `{
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }
@@ -48,18 +50,18 @@ type fileSystem interface {
 //}
 
 // osFS implements fileSystem using the local disk.
-type osFS struct {}
+type osFS struct{}
 
 func (osFS) Open(name string) (*os.File, error)        { return os.Open(name) }
-func (osFS) Stat(name string) (os.FileInfo, error) { return os.Stat(name) }
+func (osFS) Stat(name string) (os.FileInfo, error)     { return os.Stat(name) }
 func (osFS) Mkdir(name string, perm os.FileMode) error { return os.Mkdir(name, perm) }
-func (osFS) IsNotExist(err error) bool { return os.IsNotExist(err) }
-func (osFS) Create(name string) (*os.File, error) { return os.Create(name) }
+func (osFS) IsNotExist(err error) bool                 { return os.IsNotExist(err) }
+func (osFS) Create(name string) (*os.File, error)      { return os.Create(name) }
 
 func RunInitCommand(path string, fs fileSystem) error {
-	createUFODirectory(path + UFO_DIR, fs)
+	createUFODirectory(path+UFO_DIR, fs)
 
-	f, err := createConfigFile(path + UFO_CONFIG, fs)
+	f, err := createConfigFile(path+UFO_CONFIG, fs)
 
 	if err == nil {
 		defer f.Close()
@@ -81,7 +83,7 @@ func createUFODirectory(path string, fs fileSystem) {
 }
 
 func createConfigFile(path string, fs fileSystem) (*os.File, error) {
-	if _, err := fs.Stat(path); ! fs.IsNotExist(err) {
+	if _, err := fs.Stat(path); !fs.IsNotExist(err) {
 		return nil, ErrConfigFileAlreadyExists
 	}
 
@@ -106,6 +108,14 @@ func addUFOToGitignore(path string) error {
 
 	if err != nil {
 		return err
+	}
+
+	file, err := ioutil.ReadFile(gitIgnore)
+	fileToString := string(file)
+
+	if strings.Contains(fileToString, GIT_IGNORE) {
+		fmt.Println("UFO .gitignore already set.")
+		return nil
 	}
 
 	defer f.Close()
