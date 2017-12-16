@@ -111,9 +111,8 @@ func addUFOToGitignore(path string) error {
 	}
 
 	file, err := ioutil.ReadFile(gitIgnore)
-	fileToString := string(file)
 
-	if strings.Contains(fileToString, GIT_IGNORE) {
+	if strings.Contains(string(file), GIT_IGNORE) {
 		fmt.Println("UFO .gitignore already set.")
 		return nil
 	}
