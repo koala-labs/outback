@@ -1,9 +1,9 @@
 package main
 
 import (
-	"testing"
 	"errors"
 	"fmt"
+	"testing"
 )
 
 func TestItCanLoadConfigFromBytes(t *testing.T) {
@@ -15,8 +15,8 @@ func TestItCanLoadConfigFromBytes(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -36,8 +36,8 @@ func TestItErrorsIfJsonInvalid(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	],
 }`)
@@ -57,8 +57,8 @@ func TestItReturnsErrIfEnvironmentNotFoundForBranch(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -84,22 +84,22 @@ func TestItCanFindConfigForBranch(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		},
 		{
 			"branch": "staging",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		},
 		{
 			"branch": "production",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -130,8 +130,8 @@ func TestItRequiresProfile(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -159,8 +159,8 @@ func TestItRequiresImageRepo(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -188,8 +188,8 @@ func TestItRequiresBranch(t *testing.T) {
 		{
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -217,8 +217,8 @@ func TestItRequiresRegion(t *testing.T) {
 		{
 			"branch": "dev",
 			"cluster": "api-dev",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -246,8 +246,8 @@ func TestItRequiresCluster(t *testing.T) {
 		{
 			"branch": "dev",
 			"region": "us-west-1",
-            "service": "api",
-            "dockerfile": "Dockerfile.local"
+			"service": "api",
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -276,7 +276,7 @@ func TestItRequiresService(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "dockerfile": "Dockerfile.local"
+			"dockerfile": "Dockerfile.local"
 		}
 	]
 }`)
@@ -303,7 +303,7 @@ func TestItDefaultsDockerfile(t *testing.T) {
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-            "service": "api"
+			"service": "api"
 		}
 	]
 }`)
