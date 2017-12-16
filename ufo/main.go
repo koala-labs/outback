@@ -41,6 +41,7 @@ func main() {
 	// List command setup
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
 	listConfig := listCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	listEnvs := listCommand.Bool("e", false, "List environment variables")
 
 	// Run task setup
 	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
@@ -56,9 +57,9 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		fmt.Println("A subcommand is required.\n")
-		fmt.Println("Usage:\n")
-		fmt.Println("ufo command [arg1] [arg2] ...\n")
+		fmt.Println("A subcommand is required.")
+		fmt.Println("Usage:")
+		fmt.Println("ufo command [arg1] [arg2] ...")
 
 		for cmd, set := range commands {
 			fmt.Printf("Usage for `%s`:\n", cmd)
@@ -106,13 +107,17 @@ func main() {
 	case "init":
 		HandleError(RunInitCommand(*initLocation, osFS{}))
 	case "list":
+		listCommand.Parse(os.Args[2:])
+
 		config, err := LoadConfigFromFile(*listConfig)
 
 		if err != nil {
 			HandleError(err)
 		}
 
-		RunListCommand(config)
+		ListCommand(config, ListOptions{
+			ListEnvs: *listEnvs,
+		})
 	case "use":
 		fallthrough
 	default:
