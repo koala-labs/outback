@@ -1,19 +1,12 @@
 package main
 
 import (
-	"os/exec"
-	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
-	"time"
 	"fmt"
-	"strings"
+	"os/exec"
+	"time"
+
+	"github.com/aws/aws-sdk-go/service/ecs"
 )
-
-type logger struct {}
-
-func (l *logger) Printf(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
-}
 
 type DeployOptions struct {
 	Verbose        bool
@@ -31,34 +24,10 @@ type DeployCmd struct {
 	Options DeployOptions
 	s       *DeployState
 	c       *Config
-	UFO     *ufo.UFO
+	cmd     *Cmd
 	Env     *Environment
 	branch  string
 	head    string
-}
-
-func getCurrentHead() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
-
-	r, err := cmd.Output()
-
-	if err != nil {
-		return "", ErrGitError
-	}
-
-	return strings.Trim(string(r), "\n"), nil
-}
-
-func getCurrentBranch() (string, error) {
-	cmd := exec.Command("git", "rev-parse", "--abbrev-ref", "HEAD")
-
-	r, err := cmd.Output()
-
-	if err != nil {
-		return "", ErrGitError
-	}
-
-	return strings.Trim(string(r), "\n"), nil
 }
 
 func RunDeployCmd(c *Config, options DeployOptions) error {
@@ -71,14 +40,14 @@ func RunDeployCmd(c *Config, options DeployOptions) error {
 		s:       &DeployState{},
 	}
 
-	d.head, err = getCurrentHead()
+	d.head, err = d.cmd.getCurrentHead()
 
 	if err != nil {
 		return err
 	}
 
 	if d.Options.OverrideBranch == EMPTY_VALUE {
-		d.branch, err = getCurrentBranch()
+		d.branch, err = d.cmd.getCurrentBranch()
 
 		if err != nil {
 			return err
@@ -93,18 +62,9 @@ func RunDeployCmd(c *Config, options DeployOptions) error {
 
 	d.Env = e
 
-	d.initUFO()
+	d.cmd = d.cmd.initUFO(d.c.Profile, d.Env.Region)
 
 	return d.deploy()
-}
-
-func (d *DeployCmd) initUFO() {
-	c := ufo.UFOConfig{
-		Profile: &d.c.Profile,
-		Region:  &d.Env.Region,
-	}
-
-	d.UFO = ufo.Fly(c, &logger{})
 }
 
 func (d *DeployCmd) deploy() error {
@@ -125,11 +85,11 @@ func (d *DeployCmd) deploy() error {
 		return err
 	}
 
-	d.s.cluster = d.loadCluster(d.Env.Cluster)
-	d.s.service, d.s.oldT = d.loadService(d.s.cluster, d.Env.Service)
+	d.s.cluster = d.cmd.loadCluster(d.Env.Cluster)
+	d.s.service, d.s.oldT = d.cmd.loadService(d.s.cluster, d.Env.Service)
 
 	fmt.Printf("Beginning deployment to service %s.\n", d.Env.Service)
-	t, err := d.UFO.Deploy(d.s.cluster, d.s.service, d.head)
+	t, err := d.cmd.UFO.Deploy(d.s.cluster, d.s.service, d.head)
 
 	if err != nil {
 		return err
@@ -190,7 +150,7 @@ func (d *DeployCmd) awaitCompletion() error {
 	attempts := 0
 	waitTime := 2 * time.Second
 
-	for ! d.IsDeployed(d.s.cluster, d.s.service, d.s.newT) {
+	for !d.cmd.isDeployed(d.s.cluster, d.s.service, d.s.newT) {
 		if attempts > 60 {
 			return ErrDeployTimeout
 		}
@@ -202,50 +162,4 @@ func (d *DeployCmd) awaitCompletion() error {
 	}
 
 	return nil
-}
-
-func (d *DeployCmd) loadCluster(name string) *ecs.Cluster {
-	awsCluster, err := d.UFO.GetCluster(name)
-
-	HandleError(err)
-
-	return awsCluster
-}
-
-func (d *DeployCmd) loadService(c *ecs.Cluster, name string) (*ecs.Service, *ecs.TaskDefinition) {
-	awsService, err := d.UFO.GetService(c, name)
-
-	HandleError(err)
-
-	t, err := d.UFO.GetTaskDefinition(c, awsService)
-
-	HandleError(err)
-
-	return awsService, t
-}
-
-func (d *DeployCmd) IsDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) bool {
-	if *s.DesiredCount <= 0 {
-		return false
-	}
-
-	runningTasks, err := d.UFO.RunningTasks(c, s)
-
-	HandleError(err)
-
-	if len(runningTasks) <= 0 {
-		return false
-	}
-
-	tasks, err := d.UFO.GetTasks(c, runningTasks)
-
-	HandleError(err)
-
-	for _, task := range tasks.Tasks {
-		if *task.TaskDefinitionArn == *t.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
-			return true
-		}
-	}
-
-	return false
 }
