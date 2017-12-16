@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/ufo-core"
 )
 
 type logger struct{}
