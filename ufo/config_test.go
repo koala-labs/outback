@@ -44,7 +44,7 @@ func TestItErrorsIfJsonInvalid(t *testing.T) {
 	_, err := LoadConfig(json)
 
 	if err == nil {
-		t.Fatal(errors.New("Expected failure case due to invalid json."))
+		t.Fatal(errors.New("Expected failure case due to invalid json"))
 	}
 }
 
@@ -71,7 +71,7 @@ func TestItReturnsErrIfEnvironmentNotFoundForBranch(t *testing.T) {
 	_, err = c.GetEnvironmentByBranch("not_exists")
 
 	if err == nil {
-		t.Fatal(errors.New("Expected failure case due to not found branch."))
+		t.Fatal(errors.New("Expected failure case due to not found branch"))
 	}
 }
 

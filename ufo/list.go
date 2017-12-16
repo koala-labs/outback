@@ -8,24 +8,24 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
-type ListOptions struct {
+type listOptions struct {
 	ListEnvs bool
 }
 
-type ListCmd struct {
+type listCmd struct {
 	c       *Config
 	cmd     *Cmd
 	Env     *Environment
-	Options ListOptions
+	Options listOptions
 }
 
-func ListCommand(c *Config, options ListOptions) {
-	l := &ListCmd{
+func ListCommand(c *Config, options listOptions) {
+	l := &listCmd{
 		c:       c,
 		Options: options,
 	}
 
-	PrintConfigInfo(c)
+	printConfigInfo(c)
 
 	b, err := l.cmd.getCurrentBranch()
 
@@ -43,16 +43,16 @@ func ListCommand(c *Config, options ListOptions) {
 
 	l.cmd = l.cmd.initUFO(l.c.Profile, l.Env.Region)
 
-	l.PrintInfoForAllEnvironments(c)
+	l.printInfoForAllEnvironments(c)
 }
 
-func PrintConfigInfo(c *Config) {
+func printConfigInfo(c *Config) {
 	fmt.Printf("AWS Profile:            %s\n", c.Profile)
-	fmt.Printf("ECR Repository:         %s\n\n", c.ImageRepositoryUrl)
+	fmt.Printf("ECR Repository:         %s\n\n", c.ImageRepositoryURL)
 	fmt.Printf("Number of environments: %d\n", len(c.Env))
 }
 
-func PrintInfoForEnvironment(e *Environment) {
+func printInfoForEnvironment(e *Environment) {
 	CWD, err := os.Getwd()
 
 	if err != nil {
@@ -66,18 +66,18 @@ func PrintInfoForEnvironment(e *Environment) {
 	fmt.Printf("Dockerfile: %s\n", CWD+"/"+e.Dockerfile)
 }
 
-func (l *ListCmd) PrintInfoForAllEnvironments(c *Config) {
+func (l *listCmd) printInfoForAllEnvironments(c *Config) {
 	for _, env := range c.Env {
 		fmt.Println("================================")
-		PrintInfoForEnvironment(env)
+		printInfoForEnvironment(env)
 		if l.Options.ListEnvs {
-			l.PrintEnvsForEnvironment(env)
+			l.printEnvsForEnvironment(env)
 		}
 		fmt.Println("================================")
 	}
 }
 
-func (l *ListCmd) PrintEnvsForEnvironment(e *Environment) {
+func (l *listCmd) printEnvsForEnvironment(e *Environment) {
 	cluster := l.cmd.loadCluster(e.Cluster)
 	_, taskDef := l.cmd.loadService(cluster, e.Service)
 	for _, containerDefinition := range taskDef.ContainerDefinitions {
@@ -114,8 +114,8 @@ func longestNameAndValue(e []*ecs.KeyValuePair) (longestName int, longestValue i
 	return longestName, longestValue
 }
 
-func (l *ListCmd) PrintEnvsForAllEnvironments(c *Config) {
+func (l *listCmd) printEnvsForAllEnvironments(c *Config) {
 	for _, env := range c.Env {
-		l.PrintEnvsForEnvironment(env)
+		l.printEnvsForEnvironment(env)
 	}
 }

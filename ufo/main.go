@@ -30,9 +30,9 @@ func main() {
 
 	// Deploy command setup
 	deployCommand := flag.NewFlagSet("deploy", flag.ExitOnError)
-	deployConfig := deployCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	deployConfig := deployCommand.String("c", CWD+UFOConfig, "Path to ufo config.json, ./.ufo/config.json by default.")
 	deployVerbose := deployCommand.Bool("v", false, "Verbose.")
-	deployBranch := deployCommand.String("b", EMPTY_VALUE, "Branch to deploy.")
+	deployBranch := deployCommand.String("b", EmptyValue, "Branch to deploy.")
 
 	// Init command setup
 	initCommand := flag.NewFlagSet("init", flag.ExitOnError)
@@ -40,14 +40,14 @@ func main() {
 
 	// List command setup
 	listCommand := flag.NewFlagSet("list", flag.ExitOnError)
-	listConfig := listCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	listConfig := listCommand.String("c", CWD+UFOConfig, "Path to ufo config.json, ./.ufo/config.json by default.")
 	listEnvs := listCommand.Bool("e", false, "List environment variables")
 
 	// Run task setup
 	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
 	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run as a one off task. e.g. -o 'echo foo'")
-	runTaskBranch := runTaskCommand.String("b", EMPTY_VALUE, "Branch respresentative of environment to run task on")
-	runTaskConfig := runTaskCommand.String("c", CWD+UFO_CONFIG, "Path to ufo config.json, ./.ufo/config.json by default.")
+	runTaskBranch := runTaskCommand.String("b", EmptyValue, "Branch respresentative of environment to run task on")
+	runTaskConfig := runTaskCommand.String("c", CWD+UFOConfig, "Path to ufo config.json, ./.ufo/config.json by default.")
 
 	commands := map[string]*flag.FlagSet{
 		"deploy":   deployCommand,
@@ -115,7 +115,7 @@ func main() {
 			HandleError(err)
 		}
 
-		ListCommand(config, ListOptions{
+		ListCommand(config, listOptions{
 			ListEnvs: *listEnvs,
 		})
 	case "use":

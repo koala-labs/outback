@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-const DEFAULT_CONFIG = `{
+const defaultConfig = `{
 	"profile": "fooProfile",
 	"image_repository_url": "foo.dkr.ecr.us-west-1.amazonaws.com/fooRepo",
 	"environments": [
@@ -22,14 +22,14 @@ const DEFAULT_CONFIG = `{
 }
 `
 
-const GIT_IGNORE = `
+const gitIgnoreConfig = `
 /* UFO Config */
 .ufo/
 `
 
-const UFO_CONFIG = "/.ufo/config.json"
-const UFO_DIR = "/.ufo/"
-const UFO_FILE = "/config.json"
+const UFOConfig = "/.ufo/config.json"
+const UFODir = "/.ufo/"
+const UFOFile = "/config.json"
 
 var fs fileSystem = osFS{}
 
@@ -59,15 +59,15 @@ func (osFS) IsNotExist(err error) bool                 { return os.IsNotExist(er
 func (osFS) Create(name string) (*os.File, error)      { return os.Create(name) }
 
 func RunInitCommand(path string, fs fileSystem) error {
-	createUFODirectory(path+UFO_DIR, fs)
+	createUFODirectory(path+UFODir, fs)
 
-	f, err := createConfigFile(path+UFO_CONFIG, fs)
+	f, err := createConfigFile(path+UFOConfig, fs)
 
 	if err == nil {
 		defer f.Close()
 
 		fmt.Println("Writing default config to config file.")
-		fmt.Fprint(f, DEFAULT_CONFIG)
+		fmt.Fprint(f, defaultConfig)
 	}
 
 	addUFOToGitignore(path)
@@ -87,7 +87,7 @@ func createConfigFile(path string, fs fileSystem) (*os.File, error) {
 		return nil, ErrConfigFileAlreadyExists
 	}
 
-	fmt.Printf("Creating config file %s.\n", UFO_FILE)
+	fmt.Printf("Creating config file %s.\n", UFOFile)
 	f, err := fs.Create(path)
 
 	if err != nil {
@@ -112,7 +112,7 @@ func addUFOToGitignore(path string) error {
 
 	file, err := ioutil.ReadFile(gitIgnore)
 
-	if strings.Contains(string(file), GIT_IGNORE) {
+	if strings.Contains(string(file), gitIgnoreConfig) {
 		fmt.Println("UFO .gitignore already set.")
 		return nil
 	}
@@ -120,7 +120,7 @@ func addUFOToGitignore(path string) error {
 	defer f.Close()
 
 	fmt.Println("Adding UFO config to .gitignore.")
-	_, err = f.WriteString(GIT_IGNORE)
+	_, err = f.WriteString(gitIgnore)
 
 	return err
 }

@@ -46,7 +46,7 @@ func RunDeployCmd(c *Config, options DeployOptions) error {
 		return err
 	}
 
-	if d.Options.OverrideBranch == EMPTY_VALUE {
+	if d.Options.OverrideBranch == EmptyValue {
 		d.branch, err = d.cmd.getCurrentBranch()
 
 		if err != nil {
@@ -109,7 +109,7 @@ func (d *DeployCmd) deploy() error {
 }
 
 func (d *DeployCmd) buildImage() error {
-	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryUrl, d.head)
+	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryURL, d.head)
 	cmd := exec.Command("docker", "build", "-f", d.Env.Dockerfile, "--tag", c, ".")
 
 	out, err := cmd.Output()
@@ -128,7 +128,7 @@ func (d *DeployCmd) buildImage() error {
 }
 
 func (d *DeployCmd) pushImage() error {
-	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryUrl, d.head)
+	c := fmt.Sprintf("%s:%s", d.c.ImageRepositoryURL, d.head)
 	cmd := exec.Command("docker", "push", c)
 
 	out, err := cmd.Output()

@@ -2,12 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 )
 
-const EMPTY_VALUE = ""
+const EmptyValue = ""
 
 type Environment struct {
 	Branch     string `json:"branch"`
@@ -19,7 +18,7 @@ type Environment struct {
 
 type Config struct {
 	Profile            string
-	ImageRepositoryUrl string         `json:"image_repository_url"`
+	ImageRepositoryURL string         `json:"image_repository_url"`
 	Env                []*Environment `json:"environments"`
 }
 
@@ -65,13 +64,13 @@ func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
 		}
 	}
 
-	return nil, errors.New(fmt.Sprintf("Could not find environment for chosen branch: %s.", branch))
+	return nil, fmt.Errorf("Could not find environment for chosen branch: %s", branch)
 }
 
 func (c *Config) validate() error {
 	req := map[string]string{
 		"profile":              c.Profile,
-		"image_repository_url": c.ImageRepositoryUrl,
+		"image_repository_url": c.ImageRepositoryURL,
 	}
 
 	if len(c.Env) < 1 {
@@ -79,8 +78,8 @@ func (c *Config) validate() error {
 	}
 
 	for key, val := range req {
-		if val == EMPTY_VALUE {
-			return errors.New(fmt.Sprintf("Missing required attribute: %s.", key))
+		if val == EmptyValue {
+			return fmt.Errorf("Missing required attribute: %s", key)
 		}
 	}
 
@@ -93,12 +92,12 @@ func (c *Config) validate() error {
 		}
 
 		for k, v := range envReqs {
-			if v == EMPTY_VALUE {
-				return errors.New(fmt.Sprintf("Missing required attribute %s under environment %s.", k, env.Branch))
+			if v == EmptyValue {
+				return fmt.Errorf("Missing required attribute %s under environment %s", k, env.Branch)
 			}
 		}
 
-		if env.Dockerfile == EMPTY_VALUE {
+		if env.Dockerfile == EmptyValue {
 			env.Dockerfile = "Dockerfile"
 		}
 	}
