@@ -105,11 +105,10 @@ func (u *UFO) Clusters() ([]string, error) {
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
-	clusters := make([]string, 0)
+	clusters := make([]string, len(res.ClusterArns))
 
-	for _, cluster := range res.ClusterArns {
-		clusterValue := *cluster
-		clusters = append(clusters, r.FindString(clusterValue))
+	for i, cluster := range res.ClusterArns {
+		clusters[i] = r.FindString(*cluster)
 	}
 
 	return clusters, nil
@@ -128,11 +127,10 @@ func (u *UFO) Services(c *ecs.Cluster) ([]string, error) {
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
-	services := make([]string, 0)
+	services := make([]string, len(res.ServiceArns))
 
-	for _, service := range res.ServiceArns {
-		serviceValue := *service
-		services = append(services, r.FindString(serviceValue))
+	for i, service := range res.ServiceArns {
+		services[i] = r.FindString(*service)
 	}
 
 	return services, nil
