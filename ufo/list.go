@@ -82,7 +82,7 @@ func (l *listCmd) printEnvsForEnvironment(e *Environment) {
 	_, taskDef := l.cmd.loadService(cluster, e.Service)
 	for _, containerDefinition := range taskDef.ContainerDefinitions {
 		longestName, longestValue := longestNameAndValue(containerDefinition.Environment)
-		nameDashes := strings.Repeat("-", longestName+2)
+		nameDashes := strings.Repeat("-", longestName+2) // Adding two because of the table padding
 		valueDashes := strings.Repeat("-", longestValue+2)
 		fmt.Printf("+%s+%s+\n", nameDashes, valueDashes)
 		for _, value := range containerDefinition.Environment {
