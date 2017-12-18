@@ -144,7 +144,7 @@ func TestItRequiresProfile(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute: %s.", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute: %s", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -173,7 +173,7 @@ func TestItRequiresImageRepo(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute: %s.", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute: %s", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -202,7 +202,7 @@ func TestItRequiresBranch(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment .", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment ", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -231,7 +231,7 @@ func TestItRequiresRegion(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev.", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -260,7 +260,7 @@ func TestItRequiresCluster(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev.", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -289,7 +289,7 @@ func TestItRequiresService(t *testing.T) {
 
 	err = c.validate()
 
-	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev.", require) {
+	if err.Error() != fmt.Sprintf("Missing required attribute %s under environment dev", require) {
 		t.Fatalf("Failed to require %s.", require)
 	}
 }
@@ -343,6 +343,6 @@ func TestItRequiresAtLeastOneEnvironment(t *testing.T) {
 	err = c.validate()
 
 	if err != ErrNoEnvironments {
-		t.Fatalf("Failed to require %s.", require)
+		t.Fatalf("Failed to require %s", require)
 	}
 }
