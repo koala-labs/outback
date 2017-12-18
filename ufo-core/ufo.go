@@ -6,6 +6,9 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
+	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -29,11 +32,10 @@ type State struct {
 }
 
 type UFO struct {
-	l       Logger
-	State   *State
-	Session *session.Session
-	ECS     *ecs.ECS
-	ECR     *ecr.ECR
+	l     Logger
+	State *State
+	ECS   ecsiface.ECSAPI
+	ECR   ecriface.ECRAPI
 }
 
 // Fly is an alias for CreateUFO
@@ -49,11 +51,10 @@ func CreateUFO(appConfig Config, log Logger) *UFO {
 	}))
 
 	app := &UFO{
-		l:       log,
-		Session: awsSession,
-		ECS:     ecs.New(awsSession),
-		ECR:     ecr.New(awsSession),
-		State:   &State{},
+		l:     log,
+		ECS:   ecs.New(awsSession),
+		ECR:   ecr.New(awsSession),
+		State: &State{},
 	}
 
 	return app
