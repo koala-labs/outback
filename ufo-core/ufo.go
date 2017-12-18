@@ -17,12 +17,12 @@ type Logger interface {
 	Printf(string, ...interface{})
 }
 
-type UFOConfig struct {
+type Config struct {
 	Profile *string
 	Region  *string
 }
 
-type UFOState struct {
+type State struct {
 	Cluster        *ecs.Cluster
 	Service        *ecs.Service
 	TaskDefinition *ecs.TaskDefinition
@@ -30,19 +30,19 @@ type UFOState struct {
 
 type UFO struct {
 	l       Logger
-	State   *UFOState
+	State   *State
 	Session *session.Session
 	ECS     *ecs.ECS
 	ECR     *ecr.ECR
 }
 
 // Fly is an alias for CreateUFO
-func Fly(appConfig UFOConfig, log Logger) *UFO {
+func Fly(appConfig Config, log Logger) *UFO {
 	return CreateUFO(appConfig, log)
 }
 
 // CreateUFO creates a UFO session and connects to AWS to create a session
-func CreateUFO(appConfig UFOConfig, log Logger) *UFO {
+func CreateUFO(appConfig Config, log Logger) *UFO {
 	awsSession := session.Must(session.NewSessionWithOptions(session.Options{
 		Config:  aws.Config{Region: appConfig.Region},
 		Profile: *appConfig.Profile,
@@ -53,7 +53,7 @@ func CreateUFO(appConfig UFOConfig, log Logger) *UFO {
 		Session: awsSession,
 		ECS:     ecs.New(awsSession),
 		ECR:     ecr.New(awsSession),
-		State:   &UFOState{},
+		State:   &State{},
 	}
 
 	return app

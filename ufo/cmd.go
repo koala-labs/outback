@@ -20,7 +20,7 @@ type Cmd struct {
 }
 
 func (cmd *Cmd) initUFO(profile string, region string) *Cmd {
-	c := ufo.UFOConfig{
+	c := ufo.Config{
 		Profile: &profile,
 		Region:  &region,
 	}
