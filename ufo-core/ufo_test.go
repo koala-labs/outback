@@ -30,6 +30,7 @@ func (l *logger) Printf(format string, a ...interface{}) {
 
 func (m mockECRClient) DescribeImages(s *ecr.DescribeImagesInput) (*ecr.DescribeImagesOutput, error) {
 	var tag1, tag2 string = "tag1", "tag2"
+
 	return &ecr.DescribeImagesOutput{
 		ImageDetails: []*ecr.ImageDetail{
 			&ecr.ImageDetail{
@@ -44,6 +45,7 @@ func (m mockECRClient) DescribeImages(s *ecr.DescribeImagesInput) (*ecr.Describe
 func (m mockECSClient) DescribeClusters(s *ecs.DescribeClustersInput) (*ecs.DescribeClustersOutput, error) {
 	name := "cluster1"
 	arn := "clusterarn"
+
 	return &ecs.DescribeClustersOutput{
 		Clusters: []*ecs.Cluster{&ecs.Cluster{
 			ClusterName: &name,
@@ -56,6 +58,7 @@ func (m mockECSClient) DescribeClusters(s *ecs.DescribeClustersInput) (*ecs.Desc
 func (m mockECSClient) DescribeServices(s *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
 	name := "service1"
 	arn := "servicearn"
+
 	return &ecs.DescribeServicesOutput{
 		Services: []*ecs.Service{&ecs.Service{
 			ServiceName: &name,
@@ -71,6 +74,7 @@ func (m mockECSClient) DescribeTaskDefinition(s *ecs.DescribeTaskDefinitionInput
 	commands := []*string{&command, &command}
 	arn := "111222333444.dkr.ecr.us-west-1.amazonaws.com/task"
 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
+
 	return &ecs.DescribeTaskDefinitionOutput{
 		TaskDefinition: &ecs.TaskDefinition{
 			ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
@@ -86,6 +90,7 @@ func (m mockECSClient) DescribeTaskDefinition(s *ecs.DescribeTaskDefinitionInput
 func (m mockECSClient) DescribeTasks(s *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
 	lastStatus := "PENDING"
 	taskDefArn := "111222333444.dkr.ecr.us-west-1.amazonaws.com/task"
+
 	return &ecs.DescribeTasksOutput{
 		Tasks: []*ecs.Task{&ecs.Task{
 			LastStatus:        &lastStatus,
@@ -96,6 +101,7 @@ func (m mockECSClient) DescribeTasks(s *ecs.DescribeTasksInput) (*ecs.DescribeTa
 
 func (m mockECSClient) ListClusters(s *ecs.ListClustersInput) (*ecs.ListClustersOutput, error) {
 	var cluster1, cluster2, nextToken string = "cluster1", "cluster2", ""
+
 	return &ecs.ListClustersOutput{
 		ClusterArns: []*string{&cluster1, &cluster2},
 		NextToken:   &nextToken,
@@ -104,6 +110,7 @@ func (m mockECSClient) ListClusters(s *ecs.ListClustersInput) (*ecs.ListClusters
 
 func (m mockECSClient) ListServices(s *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
 	var service1, service2, nextToken string = "service1", "service2", ""
+
 	return &ecs.ListServicesOutput{
 		ServiceArns: []*string{&service1, &service2},
 		NextToken:   &nextToken,
@@ -112,6 +119,7 @@ func (m mockECSClient) ListServices(s *ecs.ListServicesInput) (*ecs.ListServices
 
 func (m mockECSClient) ListTasks(s *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
 	var task1, task2, nextToken string = "task1", "task2", ""
+
 	return &ecs.ListTasksOutput{
 		TaskArns:  []*string{&task1, &task2},
 		NextToken: &nextToken,
@@ -217,6 +225,7 @@ func TestUFOUseService(t *testing.T) {
 	}
 
 	ufo := mockUFO()
+
 	for i, c := range cases {
 		ufo.UseService(c.Expected)
 		if a, e := *ufo.State.Service.ServiceName, *c.Expected.ServiceName; a != e {
@@ -244,6 +253,7 @@ func TestUFOUseTaskDefinition(t *testing.T) {
 	}
 
 	ufo := mockUFO()
+
 	for i, c := range cases {
 		ufo.UseTaskDefinition(c.Expected)
 		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
