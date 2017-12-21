@@ -668,21 +668,26 @@ func TestUFORunTask(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%d, unexpected error", err)
 		}
+
 		for j, task := range ranTasks.Tasks {
 			if a, e := *task.ClusterArn, *c.Expected.Tasks[j].ClusterArn; a != e {
 				t.Errorf("%d, expected %v cluster arn, got %v", i, e, a)
 			}
+
 			if a, e := *task.TaskDefinitionArn, *c.Expected.Tasks[j].TaskDefinitionArn; a != e {
 				t.Errorf("%d, expected %v task definition arn, got %v", i, e, a)
 			}
-			fmt.Printf("abe: %v", task)
+
 			actualOverride := task.Overrides.ContainerOverrides[0]
 			expectedOverride := c.Expected.Tasks[j].Overrides.ContainerOverrides[0]
+
 			if a, e := *actualOverride.Name, *expectedOverride.Name; a != e {
 				t.Errorf("%d, expected %v name, got %v", i, e, a)
 			}
+
 			actualOverrideCommand := strings.Join(aws.StringValueSlice(actualOverride.Command), " ")
 			expectedOverrideCommand := strings.Join(aws.StringValueSlice(expectedOverride.Command), " ")
+
 			if a, e := actualOverrideCommand, expectedOverrideCommand; a != e {
 				t.Errorf("%d, expected %v command override, got %v", i, e, a)
 			}
