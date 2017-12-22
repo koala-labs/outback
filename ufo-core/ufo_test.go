@@ -606,9 +606,11 @@ func TestUFOGetImages(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%d, unexpected error", err)
 		}
+
 		if a, e := len(images), len(c.Expected); a != e {
 			t.Fatalf("%d, expected %d images, got %d", i, e, a)
 		}
+
 		for j, image := range images {
 			actualImageTag := strings.Join(aws.StringValueSlice(image.ImageTags), " ")
 			expectedImageTag := strings.Join(aws.StringValueSlice(c.Expected[j].ImageTags), " ")
@@ -651,10 +653,13 @@ func TestUFOGetLastDeployedCommit(t *testing.T) {
 			ECS:   mockedDescribeTaskDefinition{Resp: c.Resp},
 			ECR:   mockECRClient{},
 		}
+
 		commit, err := ufo.GetLastDeployedCommit("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366")
+
 		if err != nil {
 			t.Fatalf("%d, unexpected error", err)
 		}
+
 		if a, e := commit, c.Expected; a != e {
 			t.Errorf("%d, expected %v commit, got %v", i, e, a)
 		}
@@ -819,9 +824,11 @@ func TestUFODeploy(t *testing.T) {
 		if err != nil {
 			t.Fatalf("%d, unexpected error", err)
 		}
+
 		if a, e := *newTaskDef.Family, *c.Expected.Family; a != e {
 			t.Errorf("%d, expected %v family, got %v", i, e, a)
 		}
+
 		if a, e := *newTaskDef.ContainerDefinitions[0].Image, *c.Expected.ContainerDefinitions[0].Image; a != e {
 			t.Errorf("%d, expected %v image, got %v", i, e, a)
 		}
