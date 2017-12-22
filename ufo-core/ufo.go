@@ -6,11 +6,12 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
+
 	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/ecr"
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -83,13 +84,13 @@ func (u *UFO) logError(err error) {
 	switch err := err.(type) {
 	case awserr.Error:
 		if parsed, ok := err.(awserr.Error); ok {
-	pc := make([]uintptr, 15)
-	n := runtime.Callers(2, pc)
-	frames := runtime.CallersFrames(pc[:n])
-	frame, _ := frames.Next()
+			pc := make([]uintptr, 15)
+			n := runtime.Callers(2, pc)
+			frames := runtime.CallersFrames(pc[:n])
+			frame, _ := frames.Next()
 
-	u.l.Printf("Code: %s. %s\n %s,:%d %s\n", parsed.Code(), parsed.Error(), frame.File, frame.Line, frame.Function)
-}
+			u.l.Printf("Code: %s. %s\n %s,:%d %s\n", parsed.Code(), parsed.Error(), frame.File, frame.Line, frame.Function)
+		}
 	default:
 		u.l.Printf("error: %v", err)
 	}
@@ -311,7 +312,7 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	if err != nil {
 		u.logError(err)
 
-		return nil, err
+		return nil, ErrCouldNotRegisterTaskDefinition
 	}
 
 	return result.TaskDefinition, nil
@@ -367,6 +368,12 @@ func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskD
 	}
 
 	_, err = u.UpdateService(c, s, t)
+
+	if err != nil {
+		u.logError(err)
+
+		return nil, err
+	}
 
 	return t, err
 }
