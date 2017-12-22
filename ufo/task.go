@@ -9,6 +9,7 @@ import (
 type TaskOptions struct {
 	Command        string
 	OverrideBranch string
+	CommandName    string
 }
 
 type TaskState struct {
@@ -28,6 +29,16 @@ type TaskCmd struct {
 
 func RunTask(c *Config, options TaskOptions) error {
 	var err error
+
+	if options.CommandName != "" {
+		runTaskConfig, err := c.GetCommandForName(options.CommandName)
+
+		if err != nil {
+			return err
+		}
+
+		options.Command = runTaskConfig.Command
+	}
 
 	r := &TaskCmd{
 		c:       c,
