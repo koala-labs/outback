@@ -16,10 +16,16 @@ type Environment struct {
 	Dockerfile string `json:"dockerfile"`
 }
 
+type RunTaskConfiguration struct {
+	Name string `json:"name"`
+	Command string `json:"command"`
+}
+
 type Config struct {
 	Profile            string
 	ImageRepositoryURL string         `json:"image_repository_url"`
 	Env                []*Environment `json:"environments"`
+	RunTaskConfigs     []*RunTaskConfiguration `json:"run_tasks"`
 }
 
 func LoadConfigFromFile(path string) (*Config, error) {
@@ -56,8 +62,17 @@ func LoadConfig(config []byte) (*Config, error) {
 	return c, nil
 }
 
+func (c *Config) GetCommandForName(name string) (*RunTaskConfiguration, error) {
+	for _, runTaskConfig := range c.RunTaskConfigs {
+		if runTaskConfig.Name == name {
+			return runTaskConfig, nil
+		}
+	}
+
+	return nil, fmt.Errorf("Could not find RunTask configuration for: %s", name)
+}
+
 func (c *Config) GetEnvironmentByBranch(branch string) (*Environment, error) {
-	fmt.Println(branch)
 	for _, env := range c.Env {
 		if env.Branch == branch {
 			return env, nil

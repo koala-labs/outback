@@ -46,6 +46,7 @@ func main() {
 	// Run task setup
 	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
 	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run as a one off task. e.g. -o 'echo foo'")
+	runTaskCommandName := runTaskCommand.String("n", "", "Run-Task command name to run.")
 	runTaskBranch := runTaskCommand.String("b", EmptyValue, "Branch respresentative of environment to run task on")
 	runTaskConfig := runTaskCommand.String("c", CWD+UFOConfig, "Path to ufo config.json, ./.ufo/config.json by default.")
 
@@ -101,6 +102,7 @@ func main() {
 		err = RunTask(config, TaskOptions{
 			Command:        *runTaskCommandOverride,
 			OverrideBranch: *runTaskBranch,
+			CommandName:    *runTaskCommandName,
 		})
 
 		HandleError(err)

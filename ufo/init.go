@@ -18,6 +18,12 @@ const defaultConfig = `{
 			"service": "api",
 			"dockerfile": "Dockerfile.local"
 		}
+	],
+	"run_tasks": [
+		{
+			"name": "refresh",
+			"command": "./server_refresh.sh"
+		}
 	]
 }
 `
