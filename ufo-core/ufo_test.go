@@ -141,6 +141,29 @@ func (m mockedDeploy) UpdateService(in *ecs.UpdateServiceInput) (*ecs.UpdateServ
 	return m.UpdateServiceResp, m.UpdateServiceError
 }
 
+func TestCreateFlyUFO(t *testing.T) {
+	cases := []struct {
+		Expected *State
+	}{
+		{
+			Expected: &State{},
+		},
+	}
+
+	config := Config{
+		Profile: aws.String("profile"),
+		Region:  aws.String("region"),
+	}
+
+	ufo := Fly(config, &logger{})
+
+	for i, c := range cases {
+		if a, e := *ufo.State, *c.Expected; a != e {
+			t.Errorf("%d, expected %v state, got %v", i, e, a)
+		}
+	}
+}
+
 func TestUFOUseCluster(t *testing.T) {
 	name := "cluster1"
 	cases := []struct {
@@ -1144,7 +1167,7 @@ func TestUFODeploy(t *testing.T) {
 	command := "echo"
 	commands := []*string{&command, &command}
 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-	commit := "cbd0d9c"
+	commit := "8c018c8"
 	newImage := fmt.Sprintf("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:%s", commit)
 
 	cases := []struct {
@@ -1224,6 +1247,153 @@ func TestUFODeploy(t *testing.T) {
 
 		if a, e := actualContainerCommand, expectedContainerCommand; a != e {
 			t.Errorf("%d, expected %v command, got %v", i, e, a)
+		}
+	}
+}
+
+func TestUFODeployError(t *testing.T) {
+	fam := "family1"
+	command := "echo"
+	commands := []*string{&command, &command}
+	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
+	commit := "8c018c8"
+
+	cases := []struct {
+		DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
+		UpdateServiceResp    *ecs.UpdateServiceOutput
+		RegisterTaskDefError error
+		UpdateServiceError   error
+		Expected             error
+	}{
+		{
+			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
+				TaskDefinition: &ecs.TaskDefinition{
+					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+						Command: commands,
+						Image:   &image,
+					}},
+					Family:            &fam,
+					TaskDefinitionArn: aws.String("task-definitionarn"),
+				},
+			},
+			RegisterTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			Expected:             ErrCouldNotRegisterTaskDefinition,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS: mockedDeploy{
+				DescribeTaskDefResp:  c.DescribeTaskDefResp,
+				RegisterTaskDefResp:  nil,
+				RegisterTaskDefError: c.RegisterTaskDefError,
+			},
+			ECR: mockedECRClient{},
+		}
+
+		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
+func TestUFODeployError2(t *testing.T) {
+	fam := "family1"
+	command := "echo"
+	emptyValue := ""
+	commands := []*string{&command, &command}
+	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
+	commit := "8c018c8"
+
+	cases := []struct {
+		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
+		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
+		UpdateServiceError  error
+		Expected            error
+	}{
+		{
+			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
+				TaskDefinition: &ecs.TaskDefinition{
+					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+						Command: commands,
+						Image:   &image,
+					}},
+					Family:            &fam,
+					TaskDefinitionArn: aws.String("task-definitionarn"),
+				},
+			},
+			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
+				TaskDefinition: &ecs.TaskDefinition{
+					Cpu:              &emptyValue,
+					Family:           &fam,
+					Memory:           &emptyValue,
+					Volumes:          []*ecs.Volume{},
+					NetworkMode:      &emptyValue,
+					ExecutionRoleArn: &emptyValue,
+					TaskRoleArn:      &emptyValue,
+					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+						Command: commands,
+						Image:   &image,
+					}},
+					RequiresCompatibilities: []*string{&emptyValue},
+				},
+			},
+			UpdateServiceError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			Expected:           ErrCouldNotUpdateService,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS: mockedDeploy{
+				DescribeTaskDefResp: c.DescribeTaskDefResp,
+				RegisterTaskDefResp: c.RegisterTaskDefResp,
+				UpdateServiceError:  c.UpdateServiceError,
+			},
+			ECR: mockedECRClient{},
+		}
+
+		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
+func TestUFODeployError3(t *testing.T) {
+	commit := "8c018c8"
+
+	cases := []struct {
+		DescribeTaskDefError error
+		Expected             error
+	}{
+		{
+			DescribeTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			Expected:             ErrCouldNotRetrieveTaskDefinition,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS: mockedDeploy{
+				DescribeTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			},
+			ECR: mockedECRClient{},
+		}
+
+		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
 		}
 	}
 }
