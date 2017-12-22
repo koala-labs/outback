@@ -3,11 +3,12 @@ package main
 import (
 	"flag"
 	"os"
-
 	"fmt"
 	"os/signal"
 	"syscall"
 )
+
+const UFO_VERSION = "0.1"
 
 func registerSigHandler() {
 	sigs := make(chan os.Signal, 1)
@@ -20,6 +21,7 @@ func registerSigHandler() {
 }
 
 func main() {
+	HandleError(AssertCurrentVersion(UFO_VERSION))
 	registerSigHandler()
 
 	CWD, err := os.Getwd()
@@ -46,7 +48,7 @@ func main() {
 	// Run task setup
 	runTaskCommand := flag.NewFlagSet("run-task", flag.ExitOnError)
 	runTaskCommandOverride := runTaskCommand.String("o", "echo", "Command to run as a one off task. e.g. -o 'echo foo'")
-	runTaskCommandName := runTaskCommand.String("n", "", "Run-Task command name to run.")
+	runTaskCommandName := runTaskCommand.String("n", EmptyValue, "Run-Task command name to run.")
 	runTaskBranch := runTaskCommand.String("b", EmptyValue, "Branch respresentative of environment to run task on")
 	runTaskConfig := runTaskCommand.String("c", CWD+UFOConfig, "Path to ufo config.json, ./.ufo/config.json by default.")
 
