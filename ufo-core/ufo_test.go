@@ -5,6 +5,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/service/ecr"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,112 +21,124 @@ func (l *logger) Printf(format string, a ...interface{}) {
 	fmt.Printf(format, a...)
 }
 
-type mockECRClient struct {
+type mockedECRClient struct {
 	ecriface.ECRAPI
+}
+
+type mockedECSClient struct {
+	ecsiface.ECSAPI
 }
 
 type mockedDescribeImages struct {
 	ecriface.ECRAPI
-	Resp ecr.DescribeImagesOutput
-}
-
-type mockECSClient struct {
-	ecsiface.ECSAPI
+	Resp  *ecr.DescribeImagesOutput
+	Error error
 }
 
 type mockedDescribeClusters struct {
 	ecsiface.ECSAPI
-	Resp ecs.DescribeClustersOutput
+	Resp  *ecs.DescribeClustersOutput
+	Error error
 }
 
 type mockedDescribeServices struct {
 	ecsiface.ECSAPI
-	Resp ecs.DescribeServicesOutput
+	Resp  *ecs.DescribeServicesOutput
+	Error error
 }
 
 type mockedDescribeTaskDefinition struct {
 	ecsiface.ECSAPI
-	Resp ecs.DescribeTaskDefinitionOutput
+	Resp  *ecs.DescribeTaskDefinitionOutput
+	Error error
 }
 
 type mockedDescribeTasks struct {
 	ecsiface.ECSAPI
-	Resp ecs.DescribeTasksOutput
+	Resp  *ecs.DescribeTasksOutput
+	Error error
 }
 
 type mockedListClusters struct {
 	ecsiface.ECSAPI
-	Resp ecs.ListClustersOutput
+	Resp  *ecs.ListClustersOutput
+	Error error
 }
 
 type mockedListServices struct {
 	ecsiface.ECSAPI
-	Resp ecs.ListServicesOutput
+	Resp  *ecs.ListServicesOutput
+	Error error
 }
 
 type mockedListTasks struct {
 	ecsiface.ECSAPI
-	Resp ecs.ListTasksOutput
+	Resp  *ecs.ListTasksOutput
+	Error error
 }
 
 type mockedRunTask struct {
 	ecsiface.ECSAPI
-	Resp ecs.RunTaskOutput
+	Resp  *ecs.RunTaskOutput
+	Error error
 }
 
 type mockedDeploy struct {
 	ecsiface.ECSAPI
-	DescribeTaskDefResp ecs.DescribeTaskDefinitionOutput
-	RegisterTaskDefResp ecs.RegisterTaskDefinitionOutput
-	UpdateServiceResp   ecs.UpdateServiceOutput
+	DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
+	RegisterTaskDefResp  *ecs.RegisterTaskDefinitionOutput
+	UpdateServiceResp    *ecs.UpdateServiceOutput
+	DescribeTaskDefError error
+	RegisterTaskDefError error
+	UpdateServiceError   error
 }
 
 func (m mockedDescribeClusters) DescribeClusters(in *ecs.DescribeClustersInput) (*ecs.DescribeClustersOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedDescribeImages) DescribeImages(in *ecr.DescribeImagesInput) (*ecr.DescribeImagesOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedDescribeServices) DescribeServices(in *ecs.DescribeServicesInput) (*ecs.DescribeServicesOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedDescribeTaskDefinition) DescribeTaskDefinition(in *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedDescribeTasks) DescribeTasks(in *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedListClusters) ListClusters(in *ecs.ListClustersInput) (*ecs.ListClustersOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedListServices) ListServices(in *ecs.ListServicesInput) (*ecs.ListServicesOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedListTasks) ListTasks(in *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedRunTask) RunTask(in *ecs.RunTaskInput) (*ecs.RunTaskOutput, error) {
-	return &m.Resp, nil
+	return m.Resp, m.Error
 }
 
 func (m mockedDeploy) DescribeTaskDefinition(in *ecs.DescribeTaskDefinitionInput) (*ecs.DescribeTaskDefinitionOutput, error) {
-	return &m.DescribeTaskDefResp, nil
+	return m.DescribeTaskDefResp, m.DescribeTaskDefError
 }
 
 func (m mockedDeploy) RegisterTaskDefinition(in *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
-	return &m.RegisterTaskDefResp, nil
+	return m.RegisterTaskDefResp, m.RegisterTaskDefError
 }
 
 func (m mockedDeploy) UpdateService(in *ecs.UpdateServiceInput) (*ecs.UpdateServiceOutput, error) {
-	return &m.UpdateServiceResp, nil
+	return m.UpdateServiceResp, m.UpdateServiceError
 }
 
 func TestUFOUseCluster(t *testing.T) {
@@ -143,8 +156,8 @@ func TestUFOUseCluster(t *testing.T) {
 	ufo := UFO{
 		l:     &logger{},
 		State: &State{},
-		ECS:   mockECSClient{},
-		ECR:   mockECRClient{},
+		ECS:   mockedECSClient{},
+		ECR:   mockedECRClient{},
 	}
 
 	for i, c := range cases {
@@ -170,8 +183,8 @@ func TestUFOUseService(t *testing.T) {
 	ufo := UFO{
 		l:     &logger{},
 		State: &State{},
-		ECS:   mockECSClient{},
-		ECR:   mockECRClient{},
+		ECS:   mockedECSClient{},
+		ECR:   mockedECRClient{},
 	}
 
 	for i, c := range cases {
@@ -204,8 +217,8 @@ func TestUFOUseTaskDefinition(t *testing.T) {
 	ufo := UFO{
 		l:     &logger{},
 		State: &State{},
-		ECS:   mockECSClient{},
-		ECR:   mockECRClient{},
+		ECS:   mockedECSClient{},
+		ECR:   mockedECRClient{},
 	}
 
 	for i, c := range cases {
@@ -230,11 +243,11 @@ func TestUFOUseTaskDefinition(t *testing.T) {
 func TestUFOClusters(t *testing.T) {
 	var cluster1, cluster2, nextToken string = "cluster1", "cluster2", ""
 	cases := []struct {
-		Resp     ecs.ListClustersOutput
+		Resp     *ecs.ListClustersOutput
 		Expected []string
 	}{
 		{
-			Resp: ecs.ListClustersOutput{
+			Resp: &ecs.ListClustersOutput{
 				ClusterArns: []*string{&cluster1, &cluster2},
 				NextToken:   &nextToken,
 			},
@@ -249,8 +262,8 @@ func TestUFOClusters(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedListClusters{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedListClusters{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		clusters, err := ufo.Clusters()
@@ -271,14 +284,41 @@ func TestUFOClusters(t *testing.T) {
 	}
 }
 
+func TestUFOClustersError(t *testing.T) {
+	cases := []struct {
+		Error    error
+		Expected error
+	}{
+		{
+			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
+			Expected: ErrFailedToListClusters,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS:   &mockedListClusters{Resp: nil, Error: c.Error},
+			ECR:   mockedECRClient{},
+		}
+
+		_, err := ufo.Clusters()
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
 func TestUFOServices(t *testing.T) {
 	var service1, service2, nextToken string = "service1", "service2", ""
 	cases := []struct {
-		Resp     ecs.ListServicesOutput
+		Resp     *ecs.ListServicesOutput
 		Expected []string
 	}{
 		{
-			Resp: ecs.ListServicesOutput{
+			Resp: &ecs.ListServicesOutput{
 				ServiceArns: []*string{&service1, &service2},
 				NextToken:   &nextToken,
 			},
@@ -293,8 +333,8 @@ func TestUFOServices(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedListServices{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedListServices{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		services, err := ufo.Services(&ecs.Cluster{})
@@ -318,11 +358,11 @@ func TestUFOServices(t *testing.T) {
 func TestUFORunningTasks(t *testing.T) {
 	var task1, task2, nextToken string = "task1", "task2", ""
 	cases := []struct {
-		Resp     ecs.ListTasksOutput
+		Resp     *ecs.ListTasksOutput
 		Expected []string
 	}{
 		{
-			Resp: ecs.ListTasksOutput{
+			Resp: &ecs.ListTasksOutput{
 				TaskArns:  []*string{&task1, &task2},
 				NextToken: &nextToken,
 			},
@@ -337,8 +377,8 @@ func TestUFORunningTasks(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedListTasks{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedListTasks{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		tasks, err := ufo.RunningTasks(&ecs.Cluster{}, &ecs.Service{})
@@ -359,13 +399,42 @@ func TestUFORunningTasks(t *testing.T) {
 	}
 }
 
+func TestUFOGetClusterError(t *testing.T) {
+	cases := []struct {
+		Resp     *ecs.DescribeClustersOutput
+		Expected error
+	}{
+		{
+			Resp: &ecs.DescribeClustersOutput{
+				Clusters: []*ecs.Cluster{},
+			},
+			Expected: ErrClusterNotFound,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS:   &mockedDescribeClusters{Resp: c.Resp},
+			ECR:   mockedECRClient{},
+		}
+
+		_, err := ufo.GetCluster("test-cluster")
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
 func TestUFOGetCluster(t *testing.T) {
 	cases := []struct {
-		Resp     ecs.DescribeClustersOutput
+		Resp     *ecs.DescribeClustersOutput
 		Expected *ecs.Cluster
 	}{
 		{
-			Resp: ecs.DescribeClustersOutput{
+			Resp: &ecs.DescribeClustersOutput{
 				Clusters: []*ecs.Cluster{&ecs.Cluster{
 					ClusterName: aws.String("test-cluster"),
 					ClusterArn:  aws.String("test-clusterarn"),
@@ -379,13 +448,12 @@ func TestUFOGetCluster(t *testing.T) {
 		},
 	}
 
-	//@TODO Handle Error
 	for i, c := range cases {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedDescribeClusters{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedDescribeClusters{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		cluster, err := ufo.GetCluster("test-cluster")
@@ -404,11 +472,11 @@ func TestUFOGetService(t *testing.T) {
 	name := "test-service"
 	arn := "test-servicearn"
 	cases := []struct {
-		Resp     ecs.DescribeServicesOutput
+		Resp     *ecs.DescribeServicesOutput
 		Expected *ecs.Service
 	}{
 		{
-			Resp: ecs.DescribeServicesOutput{
+			Resp: &ecs.DescribeServicesOutput{
 				Services: []*ecs.Service{&ecs.Service{
 					ServiceName: &name,
 					ServiceArn:  &arn,
@@ -425,8 +493,8 @@ func TestUFOGetService(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedDescribeServices{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedDescribeServices{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		service, err := ufo.GetService(&ecs.Cluster{}, "test-service")
@@ -448,11 +516,11 @@ func TestUFOGetTaskDefinition(t *testing.T) {
 	arn := "test-taskdefinitionarn"
 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
 	cases := []struct {
-		Resp     ecs.DescribeTaskDefinitionOutput
+		Resp     *ecs.DescribeTaskDefinitionOutput
 		Expected *ecs.TaskDefinition
 	}{
 		{
-			Resp: ecs.DescribeTaskDefinitionOutput{
+			Resp: &ecs.DescribeTaskDefinitionOutput{
 				TaskDefinition: &ecs.TaskDefinition{
 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
 						Command: command,
@@ -476,8 +544,8 @@ func TestUFOGetTaskDefinition(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedDescribeTaskDefinition{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedDescribeTaskDefinition{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		taskDef, err := ufo.GetTaskDefinition(&ecs.Cluster{}, &ecs.Service{})
@@ -506,11 +574,11 @@ func TestUFOGetTaskDefinition(t *testing.T) {
 func TestUFOGetTasks(t *testing.T) {
 	var lastStatus, taskDefArn string = "PENDING", "111222333444.dkr.ecr.us-west-1.amazonaws.com/task"
 	cases := []struct {
-		Resp     ecs.DescribeTasksOutput
+		Resp     *ecs.DescribeTasksOutput
 		Expected *ecs.DescribeTasksOutput
 	}{
 		{
-			Resp: ecs.DescribeTasksOutput{
+			Resp: &ecs.DescribeTasksOutput{
 				Tasks: []*ecs.Task{&ecs.Task{
 					LastStatus:        &lastStatus,
 					TaskDefinitionArn: &taskDefArn,
@@ -530,8 +598,8 @@ func TestUFOGetTasks(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedDescribeTasks{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedDescribeTasks{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		tasks, err := ufo.GetTasks(&ecs.Cluster{}, []*string{})
@@ -559,11 +627,11 @@ func TestUFOGetTasks(t *testing.T) {
 func TestUFOGetImages(t *testing.T) {
 	var tag1, tag2 string = "tag1", "tag2"
 	cases := []struct {
-		Resp     ecr.DescribeImagesOutput
+		Resp     *ecr.DescribeImagesOutput
 		Expected []*ecr.ImageDetail
 	}{
 		{
-			Resp: ecr.DescribeImagesOutput{
+			Resp: &ecr.DescribeImagesOutput{
 				ImageDetails: []*ecr.ImageDetail{
 					&ecr.ImageDetail{
 						ImageTags: []*string{&tag1},
@@ -581,7 +649,7 @@ func TestUFOGetImages(t *testing.T) {
 				}},
 		},
 		{
-			Resp:     ecr.DescribeImagesOutput{},
+			Resp:     &ecr.DescribeImagesOutput{},
 			Expected: []*ecr.ImageDetail{},
 		},
 	}
@@ -590,8 +658,8 @@ func TestUFOGetImages(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockECSClient{},
-			ECR:   mockedDescribeImages{Resp: c.Resp},
+			ECS:   mockedECSClient{},
+			ECR:   &mockedDescribeImages{Resp: c.Resp},
 		}
 
 		images, err := ufo.GetImages(&ecs.TaskDefinition{
@@ -628,11 +696,11 @@ func TestUFOGetLastDeployedCommit(t *testing.T) {
 	arn := "test-taskdefinitionarn"
 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
 	cases := []struct {
-		Resp     ecs.DescribeTaskDefinitionOutput
+		Resp     *ecs.DescribeTaskDefinitionOutput
 		Expected string
 	}{
 		{
-			Resp: ecs.DescribeTaskDefinitionOutput{
+			Resp: &ecs.DescribeTaskDefinitionOutput{
 				TaskDefinition: &ecs.TaskDefinition{
 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
 						Command: command,
@@ -650,8 +718,8 @@ func TestUFOGetLastDeployedCommit(t *testing.T) {
 		ufo := UFO{
 			l:     &logger{},
 			State: &State{},
-			ECS:   mockedDescribeTaskDefinition{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECS:   &mockedDescribeTaskDefinition{Resp: c.Resp},
+			ECR:   mockedECRClient{},
 		}
 
 		commit, err := ufo.GetLastDeployedCommit("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366")
@@ -668,11 +736,11 @@ func TestUFOGetLastDeployedCommit(t *testing.T) {
 
 func TestUFORunTask(t *testing.T) {
 	cases := []struct {
-		Resp     ecs.RunTaskOutput
+		Resp     *ecs.RunTaskOutput
 		Expected *ecs.RunTaskOutput
 	}{
 		{
-			Resp: ecs.RunTaskOutput{
+			Resp: &ecs.RunTaskOutput{
 				Tasks: []*ecs.Task{&ecs.Task{
 					ClusterArn:        aws.String("clusterarn"),
 					TaskDefinitionArn: aws.String("taskdefarn"),
@@ -708,7 +776,7 @@ func TestUFORunTask(t *testing.T) {
 			l:     &logger{},
 			State: &State{},
 			ECS:   mockedRunTask{Resp: c.Resp},
-			ECR:   mockECRClient{},
+			ECR:   mockedECRClient{},
 		}
 
 		ranTasks, err := ufo.RunTask(
@@ -762,13 +830,13 @@ func TestUFODeploy(t *testing.T) {
 	newImage := fmt.Sprintf("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:%s", commit)
 
 	cases := []struct {
-		DescribeTaskDefResp ecs.DescribeTaskDefinitionOutput
-		RegisterTaskDefResp ecs.RegisterTaskDefinitionOutput
-		UpdateServiceResp   ecs.UpdateServiceOutput
+		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
+		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
+		UpdateServiceResp   *ecs.UpdateServiceOutput
 		Expected            *ecs.TaskDefinition
 	}{
 		{
-			DescribeTaskDefResp: ecs.DescribeTaskDefinitionOutput{
+			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
 				TaskDefinition: &ecs.TaskDefinition{
 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
 						Command: commands,
@@ -778,7 +846,7 @@ func TestUFODeploy(t *testing.T) {
 					TaskDefinitionArn: aws.String("task-definitionarn"),
 				},
 			},
-			RegisterTaskDefResp: ecs.RegisterTaskDefinitionOutput{
+			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
 				TaskDefinition: &ecs.TaskDefinition{
 					Cpu:              &emptyValue,
 					Family:           &fam,
@@ -794,7 +862,7 @@ func TestUFODeploy(t *testing.T) {
 					RequiresCompatibilities: []*string{&emptyValue},
 				},
 			},
-			UpdateServiceResp: ecs.UpdateServiceOutput{
+			UpdateServiceResp: &ecs.UpdateServiceOutput{
 				Service: &ecs.Service{},
 			},
 			Expected: &ecs.TaskDefinition{
@@ -816,7 +884,7 @@ func TestUFODeploy(t *testing.T) {
 				RegisterTaskDefResp: c.RegisterTaskDefResp,
 				UpdateServiceResp:   c.UpdateServiceResp,
 			},
-			ECR: mockECRClient{},
+			ECR: mockedECRClient{},
 		}
 
 		newTaskDef, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
