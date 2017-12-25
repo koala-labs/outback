@@ -12,12 +12,12 @@ type Environment struct {
 	Branch     string `json:"branch"`
 	Region     string `json:"region"`
 	Cluster    string `json:"cluster"`
-	Service    string `json:"service"`
+	Services   []string `json:"services"`
 	Dockerfile string `json:"dockerfile"`
 }
 
 type RunTaskConfiguration struct {
-	Name string `json:"name"`
+	Name    string `json:"name"`
 	Command string `json:"command"`
 }
 
@@ -103,7 +103,10 @@ func (c *Config) validate() error {
 			"branch":  env.Branch,
 			"region":  env.Region,
 			"cluster": env.Cluster,
-			"service": env.Service,
+		}
+
+		if len(env.Services) < 1 {
+			return fmt.Errorf("At least one service is required for environment %s.", env.Branch)
 		}
 
 		for k, v := range envReqs {

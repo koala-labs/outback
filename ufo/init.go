@@ -15,7 +15,7 @@ const defaultConfig = `{
 			"branch": "dev",
 			"region": "us-west-1",
 			"cluster": "api-dev",
-			"service": "api",
+			"services": ["api", "queue"],
 			"dockerfile": "Dockerfile.local"
 		}
 	],

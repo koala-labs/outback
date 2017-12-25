@@ -62,7 +62,7 @@ func printInfoForEnvironment(e *Environment) {
 	fmt.Printf("Branch:     %s\n", e.Branch)
 	fmt.Printf("Region:     %s\n", e.Region)
 	fmt.Printf("Cluster:    %s\n", e.Cluster)
-	fmt.Printf("Service:    %s\n", e.Service)
+	fmt.Printf("Services:    %s\n", strings.Join(e.Services, ","))
 	fmt.Printf("Dockerfile: %s\n", CWD+"/"+e.Dockerfile)
 }
 
@@ -79,21 +79,29 @@ func (l *listCmd) printInfoForAllEnvironments(c *Config) {
 
 func (l *listCmd) printEnvsForEnvironment(e *Environment) {
 	cluster := l.cmd.loadCluster(e.Cluster)
-	_, taskDef := l.cmd.loadService(cluster, e.Service)
-	for _, containerDefinition := range taskDef.ContainerDefinitions {
-		longestName, longestValue := longestNameAndValue(containerDefinition.Environment)
-		nameDashes := strings.Repeat("-", longestName+2) // Adding two because of the table padding
-		valueDashes := strings.Repeat("-", longestValue+2)
-		fmt.Printf("+%s+%s+\n", nameDashes, valueDashes)
-		for _, value := range containerDefinition.Environment {
-			name := *value.Name
-			value := *value.Value
-			nameSpaces := longestName - len(name)
-			valueSpaces := longestValue - len(value)
-			spacesForName := strings.Repeat(" ", nameSpaces)
-			spacesForValue := strings.Repeat(" ", valueSpaces)
-			fmt.Printf("| %s%s | %s%s |\n", name, spacesForName, value, spacesForValue)
+
+	for _, service := range e.Services {
+		fmt.Printf("Service: %s.", service)
+
+		_, taskDef := l.cmd.loadService(cluster, service)
+
+		for _, containerDefinition := range taskDef.ContainerDefinitions {
+			longestName, longestValue := longestNameAndValue(containerDefinition.Environment)
+			nameDashes := strings.Repeat("-", longestName+2) // Adding two because of the table padding
+			valueDashes := strings.Repeat("-", longestValue+2)
+
 			fmt.Printf("+%s+%s+\n", nameDashes, valueDashes)
+
+			for _, value := range containerDefinition.Environment {
+				name := *value.Name
+				value := *value.Value
+				nameSpaces := longestName - len(name)
+				valueSpaces := longestValue - len(value)
+				spacesForName := strings.Repeat(" ", nameSpaces)
+				spacesForValue := strings.Repeat(" ", valueSpaces)
+				fmt.Printf("| %s%s | %s%s |\n", name, spacesForName, value, spacesForValue)
+				fmt.Printf("+%s+%s+\n", nameDashes, valueDashes)
+			}
 		}
 	}
 }
