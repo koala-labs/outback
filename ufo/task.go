@@ -65,7 +65,9 @@ func (r *TaskCmd) run() error {
 
 	r.s.cluster = r.cmd.loadCluster(r.Env.Cluster)
 
-	r.s.taskDefinition = r.cmd.loadTaskDefinition(r.s.cluster, r.Env.Service)
+	// @todo we should be able to override the service we copy the task def from?
+	// Would services in the same env have the same setup?
+	r.s.taskDefinition = r.cmd.loadTaskDefinition(r.s.cluster, r.Env.Services[0])
 
 	r.s.command = r.Options.Command
 
