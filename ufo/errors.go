@@ -1,28 +1,25 @@
-package main
+package ufo
 
-import (
-	"errors"
-)
-
-// Config Errors
-var (
-	ErrCouldNotCreateConfig    = errors.New("Could not create config file")
-	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location")
-	ErrNoEnvironments          = errors.New("No environments configured")
-	ErrNoGitIgnore             = errors.New("No .gitignore exists")
-)
+import "errors"
 
 var (
-	ErrNoWorkingDirectory = errors.New("Could not resolve current working directory")
-	ErrCouldNotLoadConfig = errors.New("Could not load config file, please make sure it is valid JSON")
-	ErrGitError           = errors.New("Could not read git information. Please make sure you have git installed and are in a git repository")
-	ErrDeployTimeout      = errors.New("Timed out waiting for task to start")
-	ErrDockerBuild        = errors.New("Could not build docker image")
-	ErrDockerPush         = errors.New("Could not push docker image. Are you logged in to ECR? http://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html#registry_auth\nHint: `$(aws ecr get-login --no-include-email --region us-west-1)`\nDon't forget your --profile if you use one")
-)
+	ErrFailedToListClusters     = errors.New("Failed to list clusters")
+	ErrFailedToListServices     = errors.New("Failed to list services")
+	ErrFailedToListRunningTasks = errors.New("Failed to list running tasks")
 
-// Version errors
-var (
-	ErrCouldNotAssertVersion = errors.New("Could not assert that UFO is up to date.")
-	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue.")
+	ErrCouldNotRetrieveCluster        = errors.New("Could not retrieve cluster")
+	ErrCouldNotRetrieveService        = errors.New("Could not retrieve service")
+	ErrCouldNotRetrieveTaskDefinition = errors.New("Could not retrieve task definition")
+	ErrCouldNotRetrieveTasks          = errors.New("Could not retrieve tasks")
+	ErrCouldNotRetrieveImages         = errors.New("Could not retrieve images")
+
+	ErrInvalidTaskDefinition = errors.New("Invalid task definition for operation")
+
+	ErrCouldNotRegisterTaskDefinition = errors.New("Could not register new task definition")
+	ErrCouldNotUpdateService          = errors.New("Could not update service")
+
+	ErrClusterNotFound = errors.New("Cluster was not found")
+	ErrServiceNotFound = errors.New("Service was not found")
+
+	ErrCouldNotRunTask = errors.New("Desired task could not be run")
 )

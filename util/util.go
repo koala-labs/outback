@@ -1,8 +1,8 @@
-package main
+package util
 
 import (
-	"os/exec"
 	"os"
+	"os/exec"
 	"runtime"
 )
 
@@ -31,7 +31,7 @@ func init() {
 func ClearScreen() {
 	value, ok := clear[runtime.GOOS]
 
-	if ! ok {
+	if !ok {
 		panic("Platform is unsupported.")
 	}
 

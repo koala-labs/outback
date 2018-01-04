@@ -2,6 +2,7 @@ package ufo
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"runtime"
 	"strings"
@@ -18,6 +19,12 @@ import (
 
 type Logger interface {
 	Printf(string, ...interface{})
+}
+
+type logger struct{}
+
+func (l *logger) Printf(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
 }
 
 type Config struct {
@@ -39,21 +46,21 @@ type UFO struct {
 }
 
 // Fly is an alias for CreateUFO
-func Fly(appConfig Config, log Logger) *UFO {
-	return CreateUFO(appConfig, log)
+func Fly(c Config) *UFO {
+	return New(c)
 }
 
-// CreateUFO creates a UFO session and connects to AWS to create a session
-func CreateUFO(appConfig Config, log Logger) *UFO {
-	awsSession := session.Must(session.NewSessionWithOptions(session.Options{
-		Config:  aws.Config{Region: appConfig.Region},
-		Profile: *appConfig.Profile,
+// New creates a UFO session and connects to AWS to create a session
+func New(c Config) *UFO {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		Config:  aws.Config{Region: c.Region},
+		Profile: *c.Profile,
 	}))
 
 	app := &UFO{
-		l:     log,
-		ECS:   ecs.New(awsSession),
-		ECR:   ecr.New(awsSession),
+		l:     &logger{},
+		ECS:   ecs.New(sess),
+		ECR:   ecr.New(sess),
 		State: &State{},
 	}
 
@@ -392,4 +399,36 @@ func (u *UFO) RunTask(c *ecs.Cluster, t *ecs.TaskDefinition, cmd string) (*ecs.R
 	}
 
 	return result, nil
+}
+
+func (u *UFO) IsServiceDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) bool {
+	if *s.DesiredCount <= 0 {
+		return false
+	}
+
+	runningTasks, err := u.RunningTasks(c, s)
+
+	if err != nil {
+		fmt.Printf("Encountered an error: %v", err)
+		os.Exit(1)
+	}
+
+	if len(runningTasks) <= 0 {
+		return false
+	}
+
+	tasks, err := u.GetTasks(c, runningTasks)
+
+	if err != nil {
+		fmt.Printf("Encountered an error: %v", err)
+		os.Exit(1)
+	}
+
+	for _, task := range tasks.Tasks {
+		if *task.TaskDefinitionArn == *t.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
+			return true
+		}
+	}
+
+	return false
 }
