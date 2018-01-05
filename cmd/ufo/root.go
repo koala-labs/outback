@@ -16,6 +16,8 @@ var (
 	cfgFile string
 	cfg     *Config
 	ufoCfg  UFO.Config
+
+	flagCluster string
 )
 
 // RootCmd represents the base command when called
@@ -43,6 +45,7 @@ func init() {
 	// Cobra supports Persistent Flags which if defined here will be global for your application
 
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $CWD/.ufo/config.json)")
+	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster to perform operations in")
 }
 
 const configTemplate = `{
@@ -81,10 +84,7 @@ const (
 func initConfig() {
 	cwd, err := os.Getwd()
 
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	handleError(err)
 
 	viper.AddConfigPath(cwd + "/.ufo")
 	viper.SetConfigName("config")
@@ -97,9 +97,7 @@ func initConfig() {
 
 		f, err := createConfig(filepath.Join(cwd, configPath))
 
-		if err != nil {
-			fmt.Println(err)
-		}
+		handleError(err)
 
 		defer f.Close()
 

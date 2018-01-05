@@ -10,7 +10,6 @@ import (
 )
 
 var (
-	flagServiceEnvsCluster string
 	flagServiceEnvsService string
 )
 
@@ -22,7 +21,7 @@ var serviceEnvsCmd = &cobra.Command{
 }
 
 func envsRun(cmd *cobra.Command, args []string) {
-	c, err := cfg.getSelectedCluster(flagServiceEnvsCluster)
+	c, err := cfg.getSelectedCluster(flagCluster)
 
 	handleError(err)
 
@@ -91,6 +90,5 @@ func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 func init() {
 	serviceCmd.AddCommand(serviceEnvsCmd)
 
-	serviceEnvsCmd.Flags().StringVarP(&flagServiceEnvsCluster, "cluster", "c", "", "Cluster where your services are running")
 	serviceEnvsCmd.Flags().StringVarP(&flagServiceEnvsService, "service", "s", "", "Service to list envs for")
 }

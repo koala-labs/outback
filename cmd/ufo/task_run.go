@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	flagTaskCluster string
 	flagTaskService string
 	flagTaskCommand string
 )
@@ -21,7 +20,7 @@ var taskRunCmd = &cobra.Command{
 }
 
 func taskRun(cmd *cobra.Command, args []string) {
-	c, err := cfg.getSelectedCluster(flagTaskCluster)
+	c, err := cfg.getSelectedCluster(flagCluster)
 
 	handleError(err)
 
@@ -77,8 +76,6 @@ func init() {
 
 	taskCmd.AddCommand(taskRunCmd)
 
-	taskRunCmd.Flags().StringVarP(&flagTaskCluster, "cluster", "c", "", "cluster")
 	taskRunCmd.Flags().StringVarP(&flagTaskService, "service", "s", "", "service to use base image from")
 	taskRunCmd.Flags().StringVarP(&flagTaskCommand, "command", "n", "", "name of the command to run from your config or the command itself")
-
 }

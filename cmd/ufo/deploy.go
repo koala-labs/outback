@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"os/exec"
 	"time"
 
@@ -21,7 +20,6 @@ const (
 
 var (
 	flagDeployVerbose bool
-	flagDeployCluster string
 )
 
 var deployCmd = &cobra.Command{
@@ -52,7 +50,7 @@ type DeployState struct {
 func deployRun(cmd *cobra.Command, args []string) error {
 	var err error
 
-	c, err := cfg.getSelectedCluster(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -134,12 +132,9 @@ func (d *DeployOperation) PrintStatus() {
 // InitDeployments runs through all the configured services and creates a goroutine for their deployment
 // DeployOperation keeps an array of DeployState pointaers for each service which will be deployed
 func (d *DeployOperation) InitDeployments() {
-	c, err := cfg.getSelectedCluster(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagCluster)
 
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
+	handleError(err)
 
 	for i, service := range c.Services {
 		s := &DeployState{
@@ -180,9 +175,9 @@ func (d *DeployOperation) deploy(service string, s *DeployState) error {
 	ufo := UFO.New(ufoCfg)
 
 	s.UpdateStatus(fmt.Sprintf("Preparing to deploy branch %s to service %s on cluster %s\n",
-		d.branch, service, flagDeployCluster))
+		d.branch, service, flagCluster))
 
-	s.cluster, err = ufo.GetCluster(flagDeployCluster)
+	s.cluster, err = ufo.GetCluster(flagCluster)
 	s.service, err = ufo.GetService(s.cluster, service)
 
 	s.UpdateStatus(fmt.Sprintf("Beginning deployment to service %s\n", service))
@@ -212,7 +207,7 @@ func (d *DeployOperation) deploy(service string, s *DeployState) error {
 func (d *DeployOperation) buildImage() error {
 	fmt.Println("Building docker image")
 
-	c, err := cfg.getSelectedCluster(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -292,5 +287,4 @@ func init() {
 	rootCmd.AddCommand(deployCmd)
 
 	deployCmd.Flags().BoolVarP(&flagDeployVerbose, "verbose", "v", false, "Shows output of the deployment process")
-	deployCmd.Flags().StringVarP(&flagDeployCluster, "cluster", "c", "", "Cluster to perform operations in")
 }
