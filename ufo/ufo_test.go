@@ -15,12 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 )
 
-type logger struct{}
-
-func (l *logger) Printf(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
-}
-
 type mockedECRClient struct {
 	ecriface.ECRAPI
 }
@@ -93,6 +87,14 @@ type mockedDeploy struct {
 	UpdateServiceError   error
 }
 
+type mockedIsServiceRunning struct {
+	ecsiface.ECSAPI
+	ListTasksResp      *ecs.ListTasksOutput
+	DescribeTasksResp  *ecs.DescribeTasksOutput
+	ListTasksError     error
+	DescribeTasksError error
+}
+
 func (m mockedDescribeClusters) DescribeClusters(in *ecs.DescribeClustersInput) (*ecs.DescribeClustersOutput, error) {
 	return m.Resp, m.Error
 }
@@ -141,6 +143,14 @@ func (m mockedDeploy) UpdateService(in *ecs.UpdateServiceInput) (*ecs.UpdateServ
 	return m.UpdateServiceResp, m.UpdateServiceError
 }
 
+func (m mockedIsServiceRunning) ListTasks(in *ecs.ListTasksInput) (*ecs.ListTasksOutput, error) {
+	return m.ListTasksResp, m.ListTasksError
+}
+
+func (m mockedIsServiceRunning) DescribeTasks(in *ecs.DescribeTasksInput) (*ecs.DescribeTasksOutput, error) {
+	return m.DescribeTasksResp, m.DescribeTasksError
+}
+
 func TestCreateFlyUFO(t *testing.T) {
 	cases := []struct {
 		Expected *State
@@ -155,7 +165,7 @@ func TestCreateFlyUFO(t *testing.T) {
 		Region:  aws.String("region"),
 	}
 
-	ufo := Fly(config, &logger{})
+	ufo := Fly(config)
 
 	for i, c := range cases {
 		if a, e := *ufo.State, *c.Expected; a != e {
@@ -1391,6 +1401,138 @@ func TestUFODeployError3(t *testing.T) {
 		}
 
 		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
+func TestUFOIsServiceRunning(t *testing.T) {
+	cases := []struct {
+		ListTasksResp      *ecs.ListTasksOutput
+		ListTasksError     error
+		DescribeTasksResp  *ecs.DescribeTasksOutput
+		DescribeTasksError error
+		DesiredCount       *int64
+		Expected           bool
+	}{
+		{
+			ListTasksResp: &ecs.ListTasksOutput{
+				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+			},
+			DescribeTasksResp: &ecs.DescribeTasksOutput{
+				Tasks: []*ecs.Task{&ecs.Task{
+					LastStatus:        aws.String("RUNNING"),
+					TaskDefinitionArn: aws.String("taskdefarn"),
+				}},
+			},
+			DesiredCount: aws.Int64(2),
+			Expected:     true,
+		},
+		{
+			ListTasksResp: &ecs.ListTasksOutput{
+				TaskArns: aws.StringSlice([]string{}),
+			},
+			DesiredCount: aws.Int64(2),
+			Expected:     false,
+		},
+		{
+			ListTasksResp: &ecs.ListTasksOutput{
+				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+			},
+			DescribeTasksResp: &ecs.DescribeTasksOutput{
+				Tasks: []*ecs.Task{&ecs.Task{
+					LastStatus:        aws.String("PENDING"),
+					TaskDefinitionArn: aws.String("taskdefarn"),
+				}},
+			},
+			DesiredCount: aws.Int64(2),
+			Expected:     false,
+		},
+		{
+			ListTasksResp: &ecs.ListTasksOutput{
+				TaskArns: aws.StringSlice([]string{}),
+			},
+			DescribeTasksResp: &ecs.DescribeTasksOutput{
+				Tasks: []*ecs.Task{&ecs.Task{}},
+			},
+			DesiredCount: aws.Int64(0),
+			Expected:     false,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS: mockedIsServiceRunning{
+				ListTasksResp:      c.ListTasksResp,
+				DescribeTasksResp:  c.DescribeTasksResp,
+				ListTasksError:     c.ListTasksError,
+				DescribeTasksError: c.DescribeTasksError,
+			},
+			ECR: mockedECRClient{},
+		}
+
+		running, _ := ufo.IsServiceRunning(
+			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
+			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
+			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
+
+		if a, e := running, c.Expected; a != e {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
+		}
+	}
+}
+
+func TestUFOIsServiceRunningError(t *testing.T) {
+	cases := []struct {
+		ListTasksResp      *ecs.ListTasksOutput
+		ListTasksError     error
+		DescribeTasksResp  *ecs.DescribeTasksOutput
+		DescribeTasksError error
+		DesiredCount       *int64
+		Expected           error
+	}{
+		{
+			ListTasksError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			DescribeTasksResp: &ecs.DescribeTasksOutput{
+				Tasks: []*ecs.Task{&ecs.Task{
+					LastStatus:        aws.String("RUNNING"),
+					TaskDefinitionArn: aws.String("taskdefarn"),
+				}},
+			},
+			DesiredCount: aws.Int64(1),
+			Expected:     ErrFailedToListRunningTasks,
+		},
+		{
+			ListTasksResp: &ecs.ListTasksOutput{
+				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+			},
+			DescribeTasksError: awserr.New("0", "ERROR", fmt.Errorf("error")),
+			DesiredCount:       aws.Int64(1),
+			Expected:           ErrCouldNotRetrieveTasks,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS: mockedIsServiceRunning{
+				ListTasksResp:      c.ListTasksResp,
+				DescribeTasksResp:  c.DescribeTasksResp,
+				ListTasksError:     c.ListTasksError,
+				DescribeTasksError: c.DescribeTasksError,
+			},
+			ECR: mockedECRClient{},
+		}
+
+		_, err := ufo.IsServiceRunning(
+			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
+			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
+			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
 
 		if a, e := err, c.Expected; a != e {
 			t.Errorf("%d, expected %v error, got %v", i, e, a)
