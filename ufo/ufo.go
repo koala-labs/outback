@@ -222,8 +222,7 @@ func (u *UFO) GetTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskDefini
 }
 
 // GetTasks gets all tasks in a cluster
-// @todo return []*Task
-func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasksOutput, error) {
+func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) ([]*ecs.Task, error) {
 	result, err := u.ECS.DescribeTasks(&ecs.DescribeTasksInput{
 		Cluster: c.ClusterName,
 		Tasks:   tasks,
@@ -235,7 +234,7 @@ func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) (*ecs.DescribeTasksOutpu
 		return nil, ErrCouldNotRetrieveTasks
 	}
 
-	return result, nil
+	return result.Tasks, nil
 }
 
 // GetImages gets images for a task definition
