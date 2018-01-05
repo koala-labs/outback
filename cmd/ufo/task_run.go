@@ -66,7 +66,7 @@ func run(cluster string, service string, command string) error {
 		return err
 	}
 
-	fmt.Printf("Running task with command %s", command)
+	fmt.Printf("Running task on cluster %s with command %s", cluster, command)
 
 	return nil
 }
@@ -75,6 +75,7 @@ func init() {
 
 	taskCmd.AddCommand(taskRunCmd)
 
-	taskRunCmd.Flags().StringVarP(&flagService, "service", "s", "", "service to use base image from")
 	taskRunCmd.Flags().StringVarP(&flagTaskCommand, "command", "n", "", "name of the command to run from your config or the command itself")
+
+	rootCmd.MarkPersistentFlagRequired("service")
 }

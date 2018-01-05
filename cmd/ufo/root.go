@@ -49,7 +49,8 @@ func init() {
 	// Cobra supports Persistent Flags which if defined here will be global for your application
 
 	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
-	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in the ECS cluster")
+	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
+	rootCmd.MarkPersistentFlagRequired("cluster")
 }
 
 const configTemplate = `{

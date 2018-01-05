@@ -12,4 +12,6 @@ var serviceCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serviceCmd)
+
+	rootCmd.MarkPersistentFlagRequired("service")
 }

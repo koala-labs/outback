@@ -67,12 +67,11 @@ func printEnvTable(t *ecs.TaskDefinition) {
 	}
 }
 
+// longNameAndValue returns the length of the longest Name and Value
 func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 	for _, value := range e {
-		name := *value.Name
-		value := *value.Value
-		nameLength := len(name)
-		valueLength := len(value)
+		nameLength := len(*value.Name)
+		valueLength := len(*value.Value)
 		if nameLength > longName {
 			longName = nameLength
 		}
@@ -85,6 +84,4 @@ func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 
 func init() {
 	serviceCmd.AddCommand(serviceEnvsCmd)
-
-	serviceEnvsCmd.Flags().StringVarP(&flagService, "service", "s", "", "Service to list envs for")
 }
