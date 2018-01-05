@@ -52,7 +52,7 @@ type DeployState struct {
 func deployRun(cmd *cobra.Command, args []string) error {
 	var err error
 
-	env, err := getSelectedEnv(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagDeployCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -73,7 +73,7 @@ func deployRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	op.s = make([]*DeployState, len(env.Services))
+	op.s = make([]*DeployState, len(c.Services))
 
 	err = op.uploadDockerImages()
 
@@ -134,14 +134,14 @@ func (d *DeployOperation) PrintStatus() {
 // InitDeployments runs through all the configured services and creates a goroutine for their deployment
 // DeployOperation keeps an array of DeployState pointaers for each service which will be deployed
 func (d *DeployOperation) InitDeployments() {
-	env, err := getSelectedEnv(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagDeployCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 
-	for i, service := range env.Services {
+	for i, service := range c.Services {
 		s := &DeployState{
 			ServiceName: service,
 			LastStatus:  "Starting",
@@ -212,7 +212,7 @@ func (d *DeployOperation) deploy(service string, s *DeployState) error {
 func (d *DeployOperation) buildImage() error {
 	fmt.Println("Building docker image")
 
-	env, err := getSelectedEnv(flagDeployCluster)
+	c, err := cfg.getSelectedCluster(flagDeployCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -220,7 +220,7 @@ func (d *DeployOperation) buildImage() error {
 	}
 
 	tag := fmt.Sprintf("%s:%s", cfg.Repo, d.head)
-	cmd := exec.Command("docker", "build", "-f", env.Dockerfile, "-t", tag, ".")
+	cmd := exec.Command("docker", "build", "-f", c.Dockerfile, "-t", tag, ".")
 
 	out, err := cmd.Output()
 

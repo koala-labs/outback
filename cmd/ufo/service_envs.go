@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
@@ -23,21 +22,15 @@ var serviceEnvsCmd = &cobra.Command{
 }
 
 func envsRun(cmd *cobra.Command, args []string) {
-	e, err := getSelectedEnv(flagServiceEnvsCluster)
+	c, err := cfg.getSelectedCluster(flagServiceEnvsCluster)
 
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
+	handleError(err)
 
-	s, err := getSelectedService(e.Services, flagServiceEnvsService)
+	s, err := cfg.getSelectedService(c.Services, flagServiceEnvsService)
 
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
+	handleError(err)
 
-	printEnvsForService(e.Cluster, *s)
+	printEnvsForService(c.Name, *s)
 }
 
 func printEnvsForService(cluster string, service string) {
@@ -45,32 +38,17 @@ func printEnvsForService(cluster string, service string) {
 
 	c, err := ufo.GetCluster(cluster)
 
-	if err != nil {
-		fmt.Printf("Erorr: %v", err)
-		os.Exit(1)
-	}
-
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
+	handleError(err)
 
 	s, err := ufo.GetService(c, service)
 
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	handleError(err)
 
 	t, err := ufo.GetTaskDefinition(c, s)
 
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
+	handleError(err)
 
 	printEnvTable(t)
-
 }
 
 func printEnvTable(t *ecs.TaskDefinition) {
