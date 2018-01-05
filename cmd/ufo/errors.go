@@ -2,13 +2,16 @@ package cmd
 
 import (
 	"errors"
+	"fmt"
+	"os"
 )
 
 // Config Errors
 var (
 	ErrNoEnvironments  = errors.New("No environments configured")
-	ErrClusterNotFound = errors.New("Selected cluster could not be found")
-	ErrServiceNotFound = errors.New("Selected service could not be found")
+	ErrClusterNotFound = errors.New("Selected cluster could not be found. Please check your config")
+	ErrServiceNotFound = errors.New("Selected service could not be found. Please check your config")
+	ErrCommandNotFound = errors.New("Selected command could not be found. Please check your config")
 )
 
 // Deploy Errors
@@ -34,6 +37,17 @@ var (
 	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location")
 )
 
-var (
-	ErrEmptyCluster = errors.New("Please enter a cluster")
-)
+// handleError is intended to be called with an error return to simplify error handling
+// Usage:
+// foo, err := GetFoo()
+// HandleError(err)
+// DoSomethingBecauseNoError()
+func handleError(err error) {
+	if err == nil {
+		return
+	}
+
+	fmt.Printf("\nEncountered an error: %s\n", err.Error())
+
+	os.Exit(1)
+}
