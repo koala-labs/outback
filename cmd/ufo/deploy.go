@@ -280,7 +280,7 @@ func (d *DeployOperation) awaitCompletion(s *DeployState) error {
 
 		attempts++
 
-		s.UpdateStatus("Waiting for deployment to complete")
+		s.UpdateStatus(fmt.Sprintf("Waiting for deployment of %s:%d to complete", *s.newDef.Family, *s.newDef.Revision))
 
 		time.Sleep(waitTime)
 	}
