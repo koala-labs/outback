@@ -268,12 +268,22 @@ func (d *DeployOperation) pushImage() error {
 
 // awaitCompletion polls a services tasks for its status until its status is "RUNNING"
 func (d *DeployOperation) awaitCompletion(s *DeployState) error {
+	var err error
+
 	attempts := 0
 	waitTime := 5 * time.Second
 
 	ufo := UFO.New(ufoCfg)
 
-	for !ufo.IsServiceDeployed(s.cluster, s.service, s.newDef) {
+	running := false
+
+	for !running {
+		running, err = ufo.IsServiceRunning(s.cluster, s.service, s.newDef)
+
+		if err != nil {
+			return err
+		}
+
 		if attempts > attemptsTTL {
 			return ErrDeployTimeout
 		}
