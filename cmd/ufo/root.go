@@ -47,17 +47,17 @@ func init() {
 const configTemplate = `{
 	"profile": "default",
 	"region": "us-east-1",
-	"repo_url": "default.dkr.ecr.us-west-1.amazonaws.com/default",
-	"environments": [
+	"repo": "default.dkr.ecr.us-west-1.amazonaws.com/default",
+	"clusters": [
 		{
+			"name": "dev",
 			"branch": "dev",
 			"region": "us-west-1",
-			"cluster": "dev",
 			"services": ["api", "queue"],
 			"dockerfile": "Dockerfile.local"
 		}
 	],
-	"run_tasks": [
+	"tasks": [
 		{
 			"name": "migrate",
 			"command": "php artisan migrate"
@@ -110,7 +110,7 @@ func initConfig() {
 	}
 
 	if err := viper.Unmarshal(&cfg); err != nil {
-		fmt.Printf("Unable to decode into struct, %v", err)
+		fmt.Printf("Unable to decode config into struct, %v", err)
 		os.Exit(1)
 	}
 
