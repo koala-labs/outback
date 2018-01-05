@@ -2,7 +2,6 @@ package ufo
 
 import (
 	"fmt"
-	"os"
 	"regexp"
 	"runtime"
 	"strings"
@@ -408,34 +407,36 @@ func (u *UFO) RunTask(c *ecs.Cluster, t *ecs.TaskDefinition, cmd string) (*ecs.R
 	return result, nil
 }
 
-func (u *UFO) IsServiceDeployed(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) bool {
+// IsServiceRunning is meant to be called after a service update. This function checks if the newly
+// started task has the status "RUNNING"
+func (u *UFO) IsServiceRunning(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) (bool, error) {
 	if *s.DesiredCount <= 0 {
-		return false
+		return false, nil
 	}
 
 	runningTasks, err := u.RunningTasks(c, s)
 
 	if err != nil {
-		fmt.Printf("Encountered an error: %v", err)
-		os.Exit(1)
+		u.logError(err)
+		return false, err
 	}
 
 	if len(runningTasks) <= 0 {
-		return false
+		return false, nil
 	}
 
 	tasks, err := u.GetTasks(c, runningTasks)
 
 	if err != nil {
-		fmt.Printf("Encountered an error: %v", err)
-		os.Exit(1)
+		u.logError(err)
+		return false, err
 	}
 
-	for _, task := range tasks.Tasks {
+	for _, task := range tasks {
 		if *task.TaskDefinitionArn == *t.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
