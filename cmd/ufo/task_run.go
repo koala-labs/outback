@@ -76,6 +76,4 @@ func init() {
 	taskCmd.AddCommand(taskRunCmd)
 
 	taskRunCmd.Flags().StringVarP(&flagTaskCommand, "command", "n", "", "name of the command to run from your config or the command itself")
-
-	rootCmd.MarkPersistentFlagRequired("service")
 }
