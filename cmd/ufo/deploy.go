@@ -73,13 +73,13 @@ func deployRun(cmd *cobra.Command, args []string) error {
 
 	op.s = make([]*DeployState, len(c.Services))
 
-	err = op.uploadDockerImages()
+	err = op.buildPushDockerImages(flagCluster)
 
 	if err != nil {
 		return err
 	}
 
-	op.InitDeployments()
+	op.InitDeployments(flagCluster)
 
 	ticker := time.NewTicker(deployPollingRate)
 
@@ -131,8 +131,8 @@ func (d *DeployOperation) PrintStatus() {
 
 // InitDeployments runs through all the configured services and creates a goroutine for their deployment
 // DeployOperation keeps an array of DeployState pointaers for each service which will be deployed
-func (d *DeployOperation) InitDeployments() {
-	c, err := cfg.getSelectedCluster(flagCluster)
+func (d *DeployOperation) InitDeployments(cluster string) {
+	c, err := cfg.getSelectedCluster(cluster)
 
 	handleError(err)
 
@@ -145,15 +145,15 @@ func (d *DeployOperation) InitDeployments() {
 
 		d.s[i] = s
 
-		go d.deploy(service, s)
+		go d.deploy(cluster, service, s)
 	}
 }
 
-// uploadDockerImages builds and pushes a new docker image
+// buildPushDockerImages builds and pushes a new docker image
 // This should only be called once and before all the service goroutines are run
-func (d *DeployOperation) uploadDockerImages() error {
+func (d *DeployOperation) buildPushDockerImages(cluster string) error {
 
-	err := d.buildImage()
+	err := d.buildImage(cluster)
 
 	if err != nil {
 		return err
@@ -169,16 +169,27 @@ func (d *DeployOperation) uploadDockerImages() error {
 }
 
 // deploy deploys an individual service and awaits for the newly created task to be "RUNNING"
-func (d *DeployOperation) deploy(service string, s *DeployState) error {
+func (d *DeployOperation) deploy(cluster string, service string, s *DeployState) error {
 	var err error
 
 	ufo := UFO.New(ufoCfg)
 
 	s.UpdateStatus(fmt.Sprintf("Preparing to deploy branch %s to service %s on cluster %s\n",
-		d.branch, service, flagCluster))
+		d.branch, service, cluster))
 
-	s.cluster, err = ufo.GetCluster(flagCluster)
+	s.cluster, err = ufo.GetCluster(cluster)
+
+	if err != nil {
+		s.Error = err
+		return err
+	}
+
 	s.service, err = ufo.GetService(s.cluster, service)
+
+	if err != nil {
+		s.Error = err
+		return err
+	}
 
 	s.UpdateStatus(fmt.Sprintf("Beginning deployment to service %s\n", service))
 
@@ -203,11 +214,12 @@ func (d *DeployOperation) deploy(service string, s *DeployState) error {
 	return nil
 }
 
-// buildImage builds a docker image based on the configured dockerfile and tags the image with the vcs head
-func (d *DeployOperation) buildImage() error {
+// buildImage builds a docker image based on the configured dockerfile for
+// the cluster you are deploying to and tags the image with the vcs head
+func (d *DeployOperation) buildImage(cluster string) error {
 	fmt.Println("Building docker image")
 
-	c, err := cfg.getSelectedCluster(flagCluster)
+	c, err := cfg.getSelectedCluster(cluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)

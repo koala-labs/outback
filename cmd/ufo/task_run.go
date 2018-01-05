@@ -8,7 +8,6 @@ import (
 )
 
 var (
-	flagTaskService string
 	flagTaskCommand string
 )
 
@@ -24,7 +23,7 @@ func taskRun(cmd *cobra.Command, args []string) {
 
 	handleError(err)
 
-	service, err := cfg.getSelectedService(c.Services, flagTaskService)
+	service, err := cfg.getSelectedService(c.Services, flagService)
 
 	handleError(err)
 
@@ -76,6 +75,6 @@ func init() {
 
 	taskCmd.AddCommand(taskRunCmd)
 
-	taskRunCmd.Flags().StringVarP(&flagTaskService, "service", "s", "", "service to use base image from")
+	taskRunCmd.Flags().StringVarP(&flagService, "service", "s", "", "service to use base image from")
 	taskRunCmd.Flags().StringVarP(&flagTaskCommand, "command", "n", "", "name of the command to run from your config or the command itself")
 }

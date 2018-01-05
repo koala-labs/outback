@@ -12,12 +12,16 @@ import (
 	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/ufo"
 )
 
+// Config
 var (
-	cfgFile string
-	cfg     *Config
-	ufoCfg  UFO.Config
+	cfg    *Config
+	ufoCfg UFO.Config
+)
 
+// Flags
+var (
 	flagCluster string
+	flagService string
 )
 
 // RootCmd represents the base command when called
@@ -44,8 +48,8 @@ func init() {
 	// Here you will define your flags and configuration settings
 	// Cobra supports Persistent Flags which if defined here will be global for your application
 
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $CWD/.ufo/config.json)")
-	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster to perform operations in")
+	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
+	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in the ECS cluster")
 }
 
 const configTemplate = `{
