@@ -795,11 +795,11 @@ func TestUFOGetTasks(t *testing.T) {
 			t.Fatalf("%d, unexpected error", err)
 		}
 
-		if a, e := len(tasks.Tasks), len(c.Expected.Tasks); a != e {
+		if a, e := len(tasks), len(c.Expected.Tasks); a != e {
 			t.Fatalf("%d, expected %d tasks, got %d", i, e, a)
 		}
 
-		for j, task := range tasks.Tasks {
+		for j, task := range tasks {
 			if a, e := task, c.Expected.Tasks[j]; *a.LastStatus != *e.LastStatus {
 				t.Errorf("%d, expected %v LastStatus, got %v", i, e, a)
 			}
