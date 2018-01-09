@@ -24,8 +24,7 @@ var (
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
-	Short: "Deploy a service update in a cluster",
-	Long:  `deploy`,
+	Short: "Deploy service updates in a cluster",
 	RunE:  deployRun,
 }
 

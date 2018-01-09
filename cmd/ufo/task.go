@@ -7,7 +7,6 @@ import (
 var taskCmd = &cobra.Command{
 	Use:   "task",
 	Short: "Run a one off task",
-	Long:  `task`,
 }
 
 func init() {
