@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/spf13/viper"
 
@@ -13,6 +12,12 @@ import (
 )
 
 // Config
+const (
+	configPath = "/.ufo/config.json"
+	configDir  = "/.ufo/"
+	configFile = "/config.json"
+)
+
 var (
 	cfg    *Config
 	ufoCfg UFO.Config
@@ -27,10 +32,9 @@ var (
 // RootCmd represents the base command when called
 // without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "ufo",
-	Short: "Ufo is an ecs deployment tool",
-	Long: `A longer description that spans multiple
-	lines and likely ... application`,
+	Use:     "ufo",
+	Short:   "Ufo is an ecs deployment tool",
+	Long:    ``,
 	Version: "0.0.1",
 }
 
@@ -52,39 +56,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
 	rootCmd.MarkPersistentFlagRequired("cluster")
 }
-
-const configTemplate = `{
-	"profile": "default",
-	"region": "us-east-1",
-	"repo": "default.dkr.ecr.us-west-1.amazonaws.com/default",
-	"clusters": [
-		{
-			"name": "dev",
-			"branch": "dev",
-			"region": "us-west-1",
-			"services": ["api", "queue"],
-			"dockerfile": "Dockerfile.local"
-		}
-	],
-	"tasks": [
-		{
-			"name": "migrate",
-			"command": "php artisan migrate"
-		}
-	]
-}
-`
-
-const gitIgnoreString = `
-# UFO Config
-.ufo/
-`
-
-const (
-	configPath = "/.ufo/config.json"
-	configDir  = "/.ufo/"
-	configFile = "/config.json"
-)
 
 func initConfig() {
 	cwd, err := os.Getwd()
@@ -122,59 +93,4 @@ func initConfig() {
 		Region:  &cfg.Region,
 		Profile: &cfg.Profile,
 	}
-}
-
-func createDirectory(path string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		fmt.Printf("Creating %s\n", path)
-		os.Mkdir(path, os.ModePerm)
-	}
-}
-
-func createConfig(path string) (*os.File, error) {
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		return nil, ErrConfigFileAlreadyExists
-	}
-
-	fmt.Printf("Creating %s\n", path)
-
-	f, err := os.Create(path)
-
-	if err != nil {
-		return nil, ErrCouldNotCreateConfig
-	}
-
-	return f, nil
-}
-
-func updateGitIgnore(path string) error {
-	gitIgnore := filepath.Join(path, "/.gitignore")
-
-	if _, err := os.Stat(gitIgnore); os.IsNotExist(err) {
-		return ErrNoGitIgnore
-	}
-
-	// Open the file with read-write privileges so that we can check
-	// if .ufo is already ignored and if not, write to .gitignore
-	f, err := os.OpenFile(gitIgnore, os.O_APPEND|os.O_RDWR, 0600)
-
-	if err != nil {
-		return ErrCouldNotOpenGitIgnore
-	}
-
-	defer f.Close()
-
-	b := make([]byte, 1024)
-	_, err = f.Read(b)
-
-	fmt.Printf(".gitignore: %s", string(b))
-
-	if strings.Contains(string(b), gitIgnoreString) {
-		fmt.Println(".ufo is already ignored")
-	} else {
-		fmt.Println("Updating .gitignore")
-		_, err = f.WriteString(gitIgnoreString)
-	}
-
-	return err
 }
