@@ -9,14 +9,13 @@ import (
 	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/ufo"
 )
 
-var serviceEnvsCmd = &cobra.Command{
-	Use:   "envs",
-	Short: "List envs for services in your cluster",
-	Long:  `envs`,
-	Run:   envsRun,
+var serviceEnvListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "List environment variables",
+	Run:   envList,
 }
 
-func envsRun(cmd *cobra.Command, args []string) {
+func envList(cmd *cobra.Command, args []string) {
 	c, err := cfg.getSelectedCluster(flagCluster)
 
 	handleError(err)
@@ -25,10 +24,10 @@ func envsRun(cmd *cobra.Command, args []string) {
 
 	handleError(err)
 
-	printEnvsForService(c.Name, *s)
+	printEnvs(c.Name, *s)
 }
 
-func printEnvsForService(cluster string, service string) {
+func printEnvs(cluster string, service string) {
 	ufo := UFO.New(ufoCfg)
 
 	c, err := ufo.GetCluster(cluster)
@@ -83,5 +82,5 @@ func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 }
 
 func init() {
-	serviceCmd.AddCommand(serviceEnvsCmd)
+	serviceEnvCmd.AddCommand(serviceEnvListCmd)
 }

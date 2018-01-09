@@ -6,8 +6,7 @@ import (
 
 var serviceCmd = &cobra.Command{
 	Use:   "service",
-	Short: "Run various tasks for a service",
-	Long:  `service`,
+	Short: "Manage an ECS service",
 }
 
 func init() {
