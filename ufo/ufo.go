@@ -288,9 +288,9 @@ func (u *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
 	return r.FindStringSubmatch(*repo)[1], nil
 }
 
-// RegisterNewTaskDefinition creates a new task definition with an image at a specific version
+// RegisterTaskDefinitionWithImage creates a new task definition with an image at a specific version
 // This copies an existing task definition and only updates the tag used for the image
-func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
+func (u *UFO) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
 	t, err := u.GetTaskDefinition(c, s)
 
 	if err != nil {
@@ -317,6 +317,29 @@ func (u *UFO) RegisterNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, version 
 	if err != nil {
 		u.logError(err)
 
+		return nil, ErrCouldNotRegisterTaskDefinition
+	}
+
+	return result.TaskDefinition, nil
+}
+
+// RegisterTaskDefinitionWithEnvVars takes a task definition as an argument and updates its
+// ContainerDefinitions field which contains environment variables
+func (u *UFO) RegisterTaskDefinitionWithEnvVars(t *ecs.TaskDefinition) (*ecs.TaskDefinition, error) {
+	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
+		Cpu:                     t.Cpu,
+		Family:                  t.Family,
+		Memory:                  t.Memory,
+		Volumes:                 t.Volumes,
+		NetworkMode:             t.NetworkMode,
+		ExecutionRoleArn:        t.ExecutionRoleArn,
+		TaskRoleArn:             t.TaskRoleArn,
+		ContainerDefinitions:    t.ContainerDefinitions,
+		RequiresCompatibilities: t.RequiresCompatibilities,
+	})
+
+	if err != nil {
+		u.logError(err)
 		return nil, ErrCouldNotRegisterTaskDefinition
 	}
 
@@ -364,7 +387,7 @@ func (u *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinitio
 
 // Deploy a version to a service in a cluster
 func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
-	t, err := u.RegisterNewTaskDefinition(c, s, version)
+	t, err := u.RegisterTaskDefinitionWithImage(c, s, version)
 
 	if err != nil {
 		u.logError(err)

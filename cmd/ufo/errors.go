@@ -37,6 +37,11 @@ var (
 	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location")
 )
 
+// Service errors
+var (
+	ErrInvalidEnvInput = errors.New("Input must be in the form of key=value")
+)
+
 // handleError is intended to be called with an error return to simplify error handling
 // Usage:
 // foo, err := GetFoo()
