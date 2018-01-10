@@ -77,6 +77,12 @@ type mockedRunTask struct {
 	Error error
 }
 
+type mockedRegisterTaskDefinition struct {
+	ecsiface.ECSAPI
+	Resp  *ecs.RegisterTaskDefinitionOutput
+	Error error
+}
+
 type mockedDeploy struct {
 	ecsiface.ECSAPI
 	DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
@@ -128,6 +134,10 @@ func (m mockedListTasks) ListTasks(in *ecs.ListTasksInput) (*ecs.ListTasksOutput
 }
 
 func (m mockedRunTask) RunTask(in *ecs.RunTaskInput) (*ecs.RunTaskOutput, error) {
+	return m.Resp, m.Error
+}
+
+func (m mockedRegisterTaskDefinition) RegisterTaskDefinition(in *ecs.RegisterTaskDefinitionInput) (*ecs.RegisterTaskDefinitionOutput, error) {
 	return m.Resp, m.Error
 }
 
@@ -1042,6 +1052,101 @@ func TestUFOGetLastDeployedCommitError2(t *testing.T) {
 		}
 
 		_, err := ufo.GetLastDeployedCommit("error")
+
+		if a, e := err, c.Expected; a != e {
+			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		}
+	}
+}
+
+func TestRegisterTaskDefinitionWithEnvVars(t *testing.T) {
+	cases := []struct {
+		Resp     *ecs.RegisterTaskDefinitionOutput
+		Expected *ecs.TaskDefinition
+		Input    *ecs.ContainerDefinition
+		Error    error
+	}{
+		{
+			Resp: &ecs.RegisterTaskDefinitionOutput{
+				TaskDefinition: &ecs.TaskDefinition{
+					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+						Environment: []*ecs.KeyValuePair{&ecs.KeyValuePair{
+							Name:  aws.String("KEY1"),
+							Value: aws.String("VALUE1"),
+						}},
+					}},
+				},
+			},
+			Input: &ecs.ContainerDefinition{},
+			Error: nil,
+			Expected: &ecs.TaskDefinition{
+				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+					Environment: []*ecs.KeyValuePair{&ecs.KeyValuePair{
+						Name:  aws.String("KEY1"),
+						Value: aws.String("VALUE1"),
+					}},
+				}},
+			},
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS:   mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
+			ECR:   mockedECRClient{},
+		}
+
+		def, err := ufo.RegisterTaskDefinitionWithEnvVars(&ecs.TaskDefinition{
+			Cpu:                     aws.String("256"),
+			Family:                  aws.String("Family"),
+			Memory:                  aws.String("512"),
+			Volumes:                 []*ecs.Volume{},
+			NetworkMode:             aws.String("Bridge"),
+			ExecutionRoleArn:        aws.String("Role"),
+			TaskRoleArn:             aws.String("Role"),
+			ContainerDefinitions:    []*ecs.ContainerDefinition{c.Input},
+			RequiresCompatibilities: aws.StringSlice([]string{}),
+		})
+
+		if err != nil {
+			t.Fatalf("%d, unexpected error", err)
+		}
+
+		a := *def.ContainerDefinitions[0].Environment[0].Value
+		e := *c.Expected.ContainerDefinitions[0].Environment[0].Value
+
+		if a != e {
+			t.Errorf("%d, expected %v value, got %v", i, e, a)
+		}
+	}
+}
+
+func TestRegisterTaskDefinitionWithEnvVarsError(t *testing.T) {
+	cases := []struct {
+		Resp     *ecs.RegisterTaskDefinitionOutput
+		Expected error
+		Input    *ecs.ContainerDefinition
+		Error    error
+	}{
+		{
+			Resp:     &ecs.RegisterTaskDefinitionOutput{},
+			Input:    &ecs.ContainerDefinition{},
+			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
+			Expected: ErrCouldNotRegisterTaskDefinition,
+		},
+	}
+
+	for i, c := range cases {
+		ufo := UFO{
+			l:     &logger{},
+			State: &State{},
+			ECS:   mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
+			ECR:   mockedECRClient{},
+		}
+
+		_, err := ufo.RegisterTaskDefinitionWithEnvVars(&ecs.TaskDefinition{})
 
 		if a, e := err, c.Expected; a != e {
 			t.Errorf("%d, expected %v error, got %v", i, e, a)
