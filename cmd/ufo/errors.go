@@ -40,6 +40,7 @@ var (
 // Service errors
 var (
 	ErrInvalidEnvInput = errors.New("Input must be in the form of key=value")
+	ErrKeyNotPresent   = errors.New("The key entered was not present in the environment variables for this service")
 )
 
 // handleError is intended to be called with an error return to simplify error handling
