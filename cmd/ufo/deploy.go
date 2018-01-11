@@ -41,7 +41,6 @@ type DeployState struct {
 	newDef      *ecs.TaskDefinition
 	ServiceName string
 	LastStatus  string
-	Progress    string
 	Done        bool
 	Error       error
 }
@@ -128,7 +127,7 @@ func (d *DeployOperation) PrintStatus() {
 	}
 }
 
-// InitDeployments runs through all the configured services and creates a goroutine for their deployment
+// InitDeployments runs through all the configured services and creates a goroutine for their deployment.
 // DeployOperation keeps an array of DeployState pointaers for each service which will be deployed
 func (d *DeployOperation) InitDeployments(cluster string) {
 	c, err := cfg.getSelectedCluster(cluster)
