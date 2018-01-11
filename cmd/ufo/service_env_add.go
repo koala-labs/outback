@@ -16,7 +16,7 @@ var (
 
 var serviceEnvAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add/Update environment variables",
+	Short: "Add/Update environment variables and trigger a service update",
 	RunE:  envAdd,
 }
 
@@ -41,32 +41,33 @@ func envAdd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	updatedDef, err := updateTaskDefinition(t, flagServiceEnvAddEnvVars)
+	updatedDefinition, err := updateTaskDefinition(t, flagServiceEnvAddEnvVars)
 
 	if err != nil {
 		return err
 	}
 
-	registeredDef, err := u.RegisterTaskDefinitionWithEnvVars(updatedDef)
+	registeredDefinition, err := u.RegisterTaskDefinitionWithEnvVars(updatedDefinition)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = u.UpdateService(c, s, registeredDef)
+	_, err = u.UpdateService(c, s, registeredDefinition)
 
 	if err != nil {
 		return err
 	}
 
-	fmt.Println("Environment variables added")
+	fmt.Println("Environment variable(s) " + strings.Join(flagServiceEnvAddEnvVars, ", ") + "will be added")
+
 	return nil
 }
 
 func updateTaskDefinition(t *ecs.TaskDefinition, inputs []string) (*ecs.TaskDefinition, error) {
-	current := getEnvVars(t)
+	current := t.ContainerDefinitions[0].Environment
 
-	parsed, err := parseEnvVars(inputs)
+	parsed, err := stringsToKeyValue(inputs)
 
 	if err != nil {
 		return nil, err
@@ -80,8 +81,8 @@ func updateTaskDefinition(t *ecs.TaskDefinition, inputs []string) (*ecs.TaskDefi
 func updateEnvVars(current []*ecs.KeyValuePair, updates []*ecs.KeyValuePair) []*ecs.KeyValuePair {
 	// Loop through currently set EnvVars
 	for _, u := range updates {
-		if index, result := contains(current, u); result {
-			current[*index].Value = u.Value
+		if i, result := contains(current, u); result {
+			current[*i].Value = u.Value
 		} else {
 			current = append(current, u)
 		}
@@ -90,21 +91,7 @@ func updateEnvVars(current []*ecs.KeyValuePair, updates []*ecs.KeyValuePair) []*
 	return current
 }
 
-// contains returns an index and bool if the value is in the slice
-func contains(kvs []*ecs.KeyValuePair, kv *ecs.KeyValuePair) (*int, bool) {
-	for i, v := range kvs {
-		if v.Name == kv.Name {
-			return &i, true
-		}
-	}
-	return nil, false
-}
-
-func getEnvVars(t *ecs.TaskDefinition) []*ecs.KeyValuePair {
-	return t.ContainerDefinitions[0].Environment
-}
-
-func parseEnvVars(inputs []string) ([]*ecs.KeyValuePair, error) {
+func stringsToKeyValue(inputs []string) ([]*ecs.KeyValuePair, error) {
 	envVars := make([]*ecs.KeyValuePair, 0)
 
 	if len(inputs) == 0 {
@@ -127,6 +114,16 @@ func parseEnvVars(inputs []string) ([]*ecs.KeyValuePair, error) {
 	}
 
 	return envVars, nil
+}
+
+// contains returns an index and bool if the value.Name is in the slice
+func contains(kvs []*ecs.KeyValuePair, kv *ecs.KeyValuePair) (*int, bool) {
+	for i, v := range kvs {
+		if v.Name == kv.Name {
+			return &i, true
+		}
+	}
+	return nil, false
 }
 
 func init() {
