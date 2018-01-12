@@ -162,10 +162,10 @@ func (u *UFO) RunningTasks(c *ecs.Cluster, s *ecs.Service) ([]*string, error) {
 }
 
 // GetCluster returns a clusters detail with cluster name or ARN
-func (u *UFO) GetCluster(clusterName string) (*ecs.Cluster, error) {
+func (u *UFO) GetCluster(name string) (*ecs.Cluster, error) {
 	res, err := u.ECS.DescribeClusters(&ecs.DescribeClustersInput{
 		Clusters: []*string{
-			&clusterName,
+			&name,
 		},
 	})
 
@@ -242,7 +242,7 @@ func (u *UFO) GetImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) {
 	currentImage := t.ContainerDefinitions[0].Image
 
 	// Parse the repo name out of an image tag
-	repoName := u.GetRepoNameFromImage(currentImage)
+	repoName := u.GetRepoFromImage(currentImage)
 
 	result, err := u.ECR.DescribeImages(&ecr.DescribeImagesInput{
 		RepositoryName: aws.String(repoName),
@@ -359,13 +359,13 @@ func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) ec
 	return t
 }
 
-// GetRepoNameFromImage parses an image URL:tag and reads its repo name
-func (u *UFO) GetRepoNameFromImage(image *string) string {
-	// Parse the repo name out of an image tag
-	r := regexp.MustCompile(`\/(\S+):`) // /repoName:sha256:
-	repoName := r.FindStringSubmatch(*image)[1]
+// GetRepoFromImage parses an image URL:tag and reads its repo
+func (u *UFO) GetRepoFromImage(image *string) string {
+	// Parse the repo  out of an image tag
+	r := regexp.MustCompile(`\/(\S+):`) // /repo:sha256:
+	repo := r.FindStringSubmatch(*image)[1]
 
-	return repoName
+	return repo
 }
 
 // UpdateService updates a service in a cluster with a new task definition
