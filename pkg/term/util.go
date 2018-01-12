@@ -1,4 +1,4 @@
-package util
+package term
 
 import (
 	"os"
@@ -28,7 +28,8 @@ func init() {
 	}
 }
 
-func ClearScreen() {
+// Clear clears your terminal screen depending on OS
+func Clear() {
 	value, ok := clear[runtime.GOOS]
 
 	if !ok {

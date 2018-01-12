@@ -7,9 +7,9 @@ import (
 
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/spf13/cobra"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/git"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/ufo"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/util"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/git"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
+	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 const (
@@ -82,7 +82,7 @@ func deployRun(cmd *cobra.Command, args []string) error {
 	ticker := time.NewTicker(deployPollingRate)
 
 	for range ticker.C {
-		util.ClearScreen()
+		term.Clear()
 
 		op.PrintStatus()
 

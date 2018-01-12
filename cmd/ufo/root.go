@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/ufo"
+	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 // Config
