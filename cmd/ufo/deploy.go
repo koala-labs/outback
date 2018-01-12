@@ -57,13 +57,13 @@ func deployRun(cmd *cobra.Command, args []string) error {
 
 	op := &DeployOperation{}
 
-	op.head, err = git.GetCurrentHead()
+	op.head, err = git.GetHead()
 
 	if err != nil {
 		return err
 	}
 
-	op.branch, err = git.GetCurrentBranch()
+	op.branch, err = git.GetBranch()
 
 	if err != nil {
 		return err
