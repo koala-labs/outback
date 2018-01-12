@@ -79,9 +79,8 @@ func updateTaskDefinition(t *ecs.TaskDefinition, inputs []string) (*ecs.TaskDefi
 }
 
 func updateEnvVars(current []*ecs.KeyValuePair, updates []*ecs.KeyValuePair) []*ecs.KeyValuePair {
-	// Loop through currently set EnvVars
 	for _, u := range updates {
-		if i, result := contains(current, u); result {
+		if i, ok := contains(current, u); ok {
 			current[*i].Value = u.Value
 		} else {
 			current = append(current, u)
@@ -92,10 +91,10 @@ func updateEnvVars(current []*ecs.KeyValuePair, updates []*ecs.KeyValuePair) []*
 }
 
 func stringsToKeyValue(inputs []string) ([]*ecs.KeyValuePair, error) {
-	envVars := make([]*ecs.KeyValuePair, 0)
+	keyVals := make([]*ecs.KeyValuePair, 0)
 
 	if len(inputs) == 0 {
-		return envVars, nil
+		return keyVals, nil
 	}
 
 	for _, in := range inputs {
@@ -105,21 +104,21 @@ func stringsToKeyValue(inputs []string) ([]*ecs.KeyValuePair, error) {
 			return nil, ErrInvalidEnvInput
 		}
 
-		envVar := &ecs.KeyValuePair{
+		keyVal := &ecs.KeyValuePair{
 			Name:  aws.String(strings.ToUpper(splitIn[0])),
 			Value: aws.String(splitIn[1]),
 		}
 
-		envVars = append(envVars, envVar)
+		keyVals = append(keyVals, keyVal)
 	}
 
-	return envVars, nil
+	return keyVals, nil
 }
 
-// contains returns an index and bool if the value.Name is in the slice
-func contains(kvs []*ecs.KeyValuePair, kv *ecs.KeyValuePair) (*int, bool) {
-	for i, v := range kvs {
-		if v.Name == kv.Name {
+// contains returns an index and bool if keyVal.Name is in the keyVals slice
+func contains(keyVals []*ecs.KeyValuePair, keyVal *ecs.KeyValuePair) (*int, bool) {
+	for i, kv := range keyVals {
+		if kv.Name == keyVal.Name {
 			return &i, true
 		}
 	}
