@@ -273,10 +273,10 @@ func (d *DeployOperation) awaitCompletion(s *DeployState) error {
 
 	ufo := UFO.New(ufoCfg)
 
-	running := false
+	ok := false
 
-	for !running {
-		running, err = ufo.IsServiceRunning(s.cluster, s.service, s.newDef)
+	for !ok {
+		ok, err = ufo.IsServiceRunning(s.cluster, s.service, s.newDef)
 
 		if err != nil {
 			return err
