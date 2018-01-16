@@ -12,29 +12,25 @@ import (
 var serviceEnvListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List environment variables",
-	Run:   envList,
+	Run:   listServiceEnv,
 }
 
-func envList(cmd *cobra.Command, args []string) {
-	c, err := cfg.getSelectedCluster(flagCluster)
+func listServiceEnv(cmd *cobra.Command, args []string) {
+	cfgCluster, err := cfg.getCluster(flagCluster)
 
 	handleError(err)
 
-	s, err := cfg.getSelectedService(c.Services, flagService)
+	cfgService, err := cfg.getService(cfgCluster.Services, flagService)
 
 	handleError(err)
 
-	printEnvs(c.Name, *s)
-}
-
-func printEnvs(cluster string, service string) {
 	ufo := UFO.New(ufoCfg)
 
-	c, err := ufo.GetCluster(cluster)
+	c, err := ufo.GetCluster(cfgCluster.Name)
 
 	handleError(err)
 
-	s, err := ufo.GetService(c, service)
+	s, err := ufo.GetService(c, *cfgService)
 
 	handleError(err)
 
