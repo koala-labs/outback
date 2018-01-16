@@ -48,7 +48,7 @@ type DeployState struct {
 func deployRun(cmd *cobra.Command, args []string) error {
 	var err error
 
-	c, err := cfg.getSelectedCluster(flagCluster)
+	c, err := cfg.getCluster(flagCluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -71,7 +71,7 @@ func deployRun(cmd *cobra.Command, args []string) error {
 
 	op.s = make([]*DeployState, len(c.Services))
 
-	err = op.buildPushDockerImages(flagCluster)
+	err = op.buildPushImage(cfg.Repo, op.head, c.Dockerfile)
 
 	if err != nil {
 		return err
@@ -130,7 +130,7 @@ func (d *DeployOperation) PrintStatus() {
 // InitDeployments runs through all the configured services and creates a goroutine for their deployment.
 // DeployOperation keeps an array of DeployState pointaers for each service which will be deployed
 func (d *DeployOperation) InitDeployments(cluster string) {
-	c, err := cfg.getSelectedCluster(cluster)
+	c, err := cfg.getCluster(cluster)
 
 	handleError(err)
 
@@ -147,17 +147,17 @@ func (d *DeployOperation) InitDeployments(cluster string) {
 	}
 }
 
-// buildPushDockerImages builds and pushes a new docker image
+// buildPushImage builds and pushes a new image
 // This should only be called once and before all the service goroutines are run
-func (d *DeployOperation) buildPushDockerImages(cluster string) error {
+func (d *DeployOperation) buildPushImage(repo string, tag string, dockerfile string) error {
 
-	err := d.buildImage(cluster)
+	err := d.buildImage(repo, tag, dockerfile)
 
 	if err != nil {
 		return err
 	}
 
-	err = d.pushImage()
+	err = d.pushImage(repo, tag)
 
 	if err != nil {
 		return err
@@ -214,18 +214,10 @@ func (d *DeployOperation) deploy(cluster string, service string, s *DeployState)
 
 // buildImage builds a docker image based on the configured dockerfile for
 // the cluster you are deploying to and tags the image with the vcs head
-func (d *DeployOperation) buildImage(cluster string) error {
+func (d *DeployOperation) buildImage(repo string, tag string, dockerfile string) error {
 	fmt.Println("Building docker image")
 
-	c, err := cfg.getSelectedCluster(cluster)
-
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return err
-	}
-
-	tag := fmt.Sprintf("%s:%s", cfg.Repo, d.head)
-	cmd := exec.Command("docker", "build", "-f", c.Dockerfile, "-t", tag, ".")
+	cmd := exec.Command("docker", "build", "-f", dockerfile, "-t", tag, ".")
 
 	out, err := cmd.Output()
 
@@ -243,11 +235,12 @@ func (d *DeployOperation) buildImage(cluster string) error {
 }
 
 // pushImage pushes the image built from buildImage to the configured repository
-func (d *DeployOperation) pushImage() error {
+func (d *DeployOperation) pushImage(repo string, tag string) error {
 	fmt.Println("Pushing docker image")
-	tag := fmt.Sprintf("%s:%s", cfg.Repo, d.head)
 
-	cmd := exec.Command("docker", "push", tag)
+	image := fmt.Sprintf("%s:%s", repo, tag)
+
+	cmd := exec.Command("docker", "push", image)
 
 	out, err := cmd.Output()
 

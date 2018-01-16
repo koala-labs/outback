@@ -53,7 +53,7 @@ const gitIgnoreString = `
 .ufo/
 `
 
-func (c *Config) getSelectedCluster(cluster string) (*Cluster, error) {
+func (c *Config) getCluster(cluster string) (*Cluster, error) {
 	for _, c := range c.Clusters {
 		if c.Name == cluster {
 			return c, nil
@@ -63,7 +63,7 @@ func (c *Config) getSelectedCluster(cluster string) (*Cluster, error) {
 	return nil, ErrClusterNotFound
 }
 
-func (c *Config) getSelectedService(services []string, service string) (*string, error) {
+func (c *Config) getService(services []string, service string) (*string, error) {
 	for _, s := range services {
 		if s == service {
 			return &s, nil

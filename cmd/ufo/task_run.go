@@ -19,11 +19,11 @@ var taskRunCmd = &cobra.Command{
 }
 
 func taskRun(cmd *cobra.Command, args []string) {
-	c, err := cfg.getSelectedCluster(flagCluster)
+	cfgCluster, err := cfg.getCluster(flagCluster)
 
 	handleError(err)
 
-	service, err := cfg.getSelectedService(c.Services, flagService)
+	cfgService, err := cfg.getService(cfgCluster.Services, flagService)
 
 	handleError(err)
 
@@ -32,9 +32,9 @@ func taskRun(cmd *cobra.Command, args []string) {
 
 	// If the shortcut is not in the config, pass the command directly
 	if err != nil {
-		err = run(c.Name, *service, flagTaskCommand)
+		err = run(cfgCluster.Name, *cfgService, flagTaskCommand)
 	} else {
-		err = run(c.Name, *service, *command)
+		err = run(cfgCluster.Name, *cfgService, *command)
 	}
 
 	handleError(err)
@@ -42,6 +42,7 @@ func taskRun(cmd *cobra.Command, args []string) {
 
 func run(cluster string, service string, command string) error {
 	ufo := UFO.New(ufoCfg)
+
 	c, err := ufo.GetCluster(cluster)
 
 	if err != nil {
