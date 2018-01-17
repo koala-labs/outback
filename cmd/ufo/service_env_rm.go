@@ -66,11 +66,11 @@ func envRm(cmd *cobra.Command, args []string) error {
 func removeEnvVarsFromTaskDefinition(t *ecs.TaskDefinition, removals []string) (*ecs.TaskDefinition, error) {
 	encountered := map[string]bool{}
 
-	current := t.ContainerDefinitions[0].Environment
-
-	for _, c := range removals {
-		encountered[c] = true
+	for _, r := range removals {
+		encountered[r] = true
 	}
+
+	current := t.ContainerDefinitions[0].Environment
 
 	newSet := []*ecs.KeyValuePair{}
 
