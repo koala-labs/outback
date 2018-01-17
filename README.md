@@ -1,26 +1,45 @@
-# UFO (Universal Fuzz Orchestrator)
+# UFO CLI
 
 ## Build Prerequisites
   - `$ brew install go`
   - Setup GOPATH - defaults to `$HOME/go`
-  - Install [godep](https://github.com/tools/godep)
-  - Install [go-bindata](https://github.com/jteeuwen/go-bindata)
+  - Install [glide](https://github.com/Masterminds/glide)
 
-## Build Backend
-
-1. Install frontend dependencies - `cd app && yarn install`
-1. Build static assets - `$ cd app && yarn run build`
-1. Convert assets to go code - `$ cd backend && go-bindata ../app/dist/...`
-1. Build go binary - `$ go build -o ufo`
-1. Run app - `$ ./backend/ufo -profile=default -region=us-east-1`
-
-## Build CLI
-
-1. `cd ufo`
-1. `go build -o ufo`
-1. `./ufo <command> <args>`
-
-## Installing CLI
+## Installing UFO
 1. Install go `brew install go`
-1. Install the UFO binary `go install gitlab.fuzzhq.com/Web-Ops/ufo/ufo`
+1. Install the UFO binary `go install gitlab.fuzzhq.com/Web-Ops/ufo/...`
     * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
+
+## Configuration
+
+On first run, if there is not a `.ufo/config.json` config present in your current working directory, UFO will create this config for you with the default configuration below.
+
+```
+{
+	"profile": "default",
+	"region": "us-east-1",
+	"repo": "default.dkr.ecr.us-west-1.amazonaws.com/default",
+	"clusters": [
+		{
+			"name": "dev",
+			"branch": "dev",
+			"services": ["api"],
+			"dockerfile": "Dockerfile"
+		}
+	],
+	"tasks": [
+		{
+			"name": "migrate",
+			"command": "php artisan migrate"
+		}
+	]
+}
+```
+
+UFO will relies on this config to run its operations.
+
+## Commands
+
+- ufo service
+- ufo task
+- ufo deploy

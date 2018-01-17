@@ -1,0 +1,14 @@
+package cmd
+
+import (
+	"github.com/spf13/cobra"
+)
+
+var serviceCmd = &cobra.Command{
+	Use:   "service",
+	Short: "Manage an ECS service",
+}
+
+func init() {
+	rootCmd.AddCommand(serviceCmd)
+}
