@@ -59,7 +59,7 @@ func envAdd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println("Environment variable(s) " + strings.Join(flagServiceEnvAddEnvVars, ", ") + "will be added")
+	fmt.Println("Environment variable(s) " + strings.Join(flagServiceEnvAddEnvVars, ", ") + " will be added")
 
 	return nil
 }
