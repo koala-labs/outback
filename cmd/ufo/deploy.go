@@ -217,7 +217,9 @@ func (d *DeployOperation) deploy(cluster string, service string, s *DeployState)
 func (d *DeployOperation) buildImage(repo string, tag string, dockerfile string) error {
 	fmt.Println("Building docker image")
 
-	cmd := exec.Command("docker", "build", "-f", dockerfile, "-t", tag, ".")
+	fullTag := fmt.Sprintf("%s:%s", repo, tag)
+
+	cmd := exec.Command("docker", "build", "-f", dockerfile, "-t", fullTag, ".")
 
 	out, err := cmd.Output()
 
