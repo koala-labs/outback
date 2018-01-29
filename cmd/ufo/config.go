@@ -17,7 +17,6 @@ type Config struct {
 
 type Cluster struct {
 	Name       string   `mapstructure:"name"`
-	Branch     string   `mapstructure:"branch"`
 	Services   []string `mapstructure:"services"`
 	Dockerfile string   `mapstructure:"dockerfile"`
 }
@@ -34,7 +33,6 @@ const configTemplate = `{
 	"clusters": [
 		{
 			"name": "dev",
-			"branch": "dev",
 			"services": ["api"],
 			"dockerfile": "Dockerfile"
 		}

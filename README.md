@@ -22,7 +22,6 @@ On first run, if there is not a `.ufo/config.json` config present in your curren
 	"clusters": [
 		{
 			"name": "dev",
-			"branch": "dev",
 			"services": ["api"],
 			"dockerfile": "Dockerfile"
 		}
