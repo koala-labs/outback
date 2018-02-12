@@ -13,9 +13,11 @@ var (
 
 var taskRunCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run a one off task",
-	Long:  `Run a one off task based off the task definition of a service. Override the task definitions command with -o flag`,
-	Run:   taskRun,
+	Short: "Run a one off tasks",
+	Long: `You must specify a cluster, service, and command to run. The command will use the image described in the task definition for the service that is specified. When specifying a command, the task definitions current command will be overriden with the one specified. 
+	There is also an option of creating command aliases in .ufo/config.json. Once a command alias is in the ufo config, specifying that alias via the --command flag will run the configured command.
+	If the awslogs driver is configured for the service in which you base your task. Logs for that task will be sent to cloudwatch under the same log group and prefix as described in the task definition.`,
+	Run: taskRun,
 }
 
 func taskRun(cmd *cobra.Command, args []string) {
