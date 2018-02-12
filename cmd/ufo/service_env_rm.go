@@ -15,8 +15,10 @@ var (
 
 var serviceEnvRmCmd = &cobra.Command{
 	Use:   "rm",
-	Short: "Remove environment variables and trigger a service update",
-	RunE:  envRm,
+	Short: "Remove environment variables",
+	Long: `Removes the environment variable specified via the --key flag. Specify --key with
+	a key name multiple times to unset multiple variables.`,
+	RunE: envRm,
 }
 
 func envRm(cmd *cobra.Command, args []string) error {

@@ -16,8 +16,10 @@ var (
 
 var serviceEnvAddCmd = &cobra.Command{
 	Use:   "add",
-	Short: "Add/Update environment variables and trigger a service update",
-	RunE:  envAdd,
+	Short: "Add/Update environment variables",
+	Long: `At least one environment variable must be specified via the --env flag. Specify
+	--env with a key=value parameter multiple times to add multiple variables.`,
+	RunE: envAdd,
 }
 
 func envAdd(cmd *cobra.Command, args []string) error {
