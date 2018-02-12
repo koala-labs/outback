@@ -10,5 +10,5 @@ var serviceLogCmd = &cobra.Command{
 }
 
 func init() {
-	serviceCmd.AddCommand(serviceLogCmd)
+
 }
