@@ -11,7 +11,7 @@
 		export PATH=$GOPATH/bin:$PATH 
 
 ### Installing UFO
-1. Install the UFO binary `go install gitlab.fuzzhq.com/Web-Ops/ufo/...`
+1. Install the UFO binary `go get gitlab.fuzzhq.com/Web-Ops/ufo/...`
     * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
 
 ## Usage
