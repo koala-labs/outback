@@ -35,7 +35,7 @@ var rootCmd = &cobra.Command{
 	Use:     "ufo",
 	Short:   "Ufo is an ecs deployment tool",
 	Long:    ``,
-	Version: "18.2.12",
+	Version: "18.2.20",
 }
 
 // Execute adds all child commands so the root command sets flags appropriately.
@@ -78,8 +78,6 @@ func initConfig() {
 		defer f.Close()
 
 		fmt.Fprint(f, configTemplate)
-
-		updateGitIgnore(cwd)
 
 		fmt.Println("ufo config initialized")
 	}

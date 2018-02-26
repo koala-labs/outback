@@ -3,8 +3,6 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
-	"strings"
 )
 
 type Config struct {
@@ -102,36 +100,4 @@ func createConfig(path string) (*os.File, error) {
 	}
 
 	return f, nil
-}
-
-func updateGitIgnore(path string) error {
-	gitIgnore := filepath.Join(path, "/.gitignore")
-
-	if _, err := os.Stat(gitIgnore); os.IsNotExist(err) {
-		return ErrNoGitIgnore
-	}
-
-	// Open the file with read-write privileges so that we can check
-	// if .ufo is already ignored and if not, write to .gitignore
-	f, err := os.OpenFile(gitIgnore, os.O_APPEND|os.O_RDWR, 0600)
-
-	if err != nil {
-		return ErrCouldNotOpenGitIgnore
-	}
-
-	defer f.Close()
-
-	b := make([]byte, 1024)
-	_, err = f.Read(b)
-
-	fmt.Printf(".gitignore: %s", string(b))
-
-	if strings.Contains(string(b), gitIgnoreString) {
-		fmt.Println(".ufo is already ignored")
-	} else {
-		fmt.Println("Updating .gitignore")
-		_, err = f.WriteString(gitIgnoreString)
-	}
-
-	return err
 }
