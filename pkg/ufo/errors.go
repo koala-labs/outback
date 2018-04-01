@@ -22,4 +22,6 @@ var (
 	ErrServiceNotFound = errors.New("Service was not found")
 
 	ErrCouldNotRunTask = errors.New("Desired task could not be run")
+
+	ErrCouldNotGetLogs = errors.New("Could not get cloudwatch logs")
 )

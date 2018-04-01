@@ -5,16 +5,17 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
-
-	"github.com/aws/aws-sdk-go/aws/awserr"
-
-	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
-	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
 	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 )
 
 type Logger interface {
@@ -22,10 +23,6 @@ type Logger interface {
 }
 
 type logger struct{}
-
-func (l *logger) Printf(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
-}
 
 type Config struct {
 	Profile *string
@@ -43,6 +40,7 @@ type UFO struct {
 	State *State
 	ECS   ecsiface.ECSAPI
 	ECR   ecriface.ECRAPI
+	CWL   cloudwatchlogsiface.CloudWatchLogsAPI
 }
 
 // Fly is an alias for CreateUFO
@@ -61,10 +59,15 @@ func New(c Config) *UFO {
 		l:     &logger{},
 		ECS:   ecs.New(sess),
 		ECR:   ecr.New(sess),
+		CWL:   cloudwatchlogs.New(sess),
 		State: &State{},
 	}
 
 	return app
+}
+
+func (l *logger) Printf(format string, a ...interface{}) {
+	fmt.Printf(format, a...)
 }
 
 // UseCluster sets a cluster choice in UFO state
@@ -462,4 +465,68 @@ func (u *UFO) IsServiceRunning(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefini
 	}
 
 	return false, nil
+}
+
+type GetLogsInput struct {
+	Filter         string
+	LogGroupName   string
+	LogStreamNames []string
+	EndTime        time.Time
+	StartTime      time.Time
+}
+
+type LogLine struct {
+	EventId       string
+	LogStreamName string
+	Message       string
+	Timestamp     time.Time
+}
+
+func (u *UFO) GetLogs(i *GetLogsInput) ([]LogLine, error) {
+	var logLines []LogLine
+
+	input := &cloudwatchlogs.FilterLogEventsInput{
+		LogGroupName: aws.String(i.LogGroupName),
+		Interleaved:  aws.Bool(true),
+	}
+
+	if !i.StartTime.IsZero() {
+		input.SetStartTime(i.StartTime.UTC().UnixNano() / int64(time.Millisecond))
+	}
+
+	if !i.EndTime.IsZero() {
+		input.SetEndTime(i.EndTime.UTC().UnixNano() / int64(time.Millisecond))
+	}
+
+	if i.Filter != "" {
+		input.SetFilterPattern(i.Filter)
+	}
+
+	if len(i.LogStreamNames) > 0 {
+		input.SetLogStreamNames(aws.StringSlice(i.LogStreamNames))
+	}
+
+	err := u.CWL.FilterLogEventsPages(
+		input,
+		func(resp *cloudwatchlogs.FilterLogEventsOutput, lastPage bool) bool {
+			for _, event := range resp.Events {
+				logLines = append(logLines,
+					LogLine{
+						EventId:       aws.StringValue(event.EventId),
+						Message:       aws.StringValue(event.Message),
+						LogStreamName: aws.StringValue(event.LogStreamName),
+						Timestamp:     time.Unix(0, aws.Int64Value(event.Timestamp)*int64(time.Millisecond)),
+					},
+				)
+			}
+
+			return true
+		},
+	)
+
+	if err != nil {
+		return nil, ErrCouldNotGetLogs
+	}
+
+	return logLines, nil
 }
