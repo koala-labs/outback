@@ -24,8 +24,8 @@ var (
 
 // Version errors
 var (
-	ErrCouldNotAssertVersion = errors.New("Could not assert that UFO is up to date.")
-	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue.")
+	ErrCouldNotAssertVersion = errors.New("could not assert that UFO is up to date")
+	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue")
 )
 
 // Init errors
