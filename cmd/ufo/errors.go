@@ -24,8 +24,8 @@ var (
 
 // Version errors
 var (
-	ErrCouldNotAssertVersion = errors.New("Could not assert that UFO is up to date.")
-	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue.")
+	ErrCouldNotAssertVersion = errors.New("could not assert that UFO is up to date")
+	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue")
 )
 
 // Init errors
@@ -40,8 +40,10 @@ var (
 
 // Service errors
 var (
-	ErrInvalidEnvInput = errors.New("Input must be in the form of key=value")
-	ErrKeyNotPresent   = errors.New("The key entered was not present in the environment variables for this service")
+	ErrInvalidEnvInput       = errors.New("Input must be in the form of key=value")
+	ErrKeyNotPresent         = errors.New("The key entered was not present in the environment variables for this service")
+	ErrCouldNotParseTime     = errors.New("Could not parse the given time")
+	ErrCantFollowWithEndTime = errors.New("Could not follow logs because an end time was given")
 )
 
 // handleError is intended to be called with an error return to simplify error handling
