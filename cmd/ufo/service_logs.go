@@ -105,13 +105,13 @@ func (o *LogsOperation) AddTasks(tasks []string) {
 	}
 }
 
-func (o *LogsOperation) SeenEvent(eventId string) bool {
+func (o *LogsOperation) SeenEvent(eventID string) bool {
 	if o.EventCache == nil {
 		o.EventCache, _ = lru.New(eventCacheSize)
 	}
 
-	if !o.EventCache.Contains(eventId) {
-		o.EventCache.Add(eventId, Empty{})
+	if !o.EventCache.Contains(eventID) {
+		o.EventCache.Add(eventID, Empty{})
 		return false
 	}
 
@@ -176,7 +176,7 @@ func getLogs(o *LogsOperation) {
 	logs, _ := u.GetLogs(in)
 
 	for _, logLine := range logs {
-		if o.SeenEvent(logLine.EventId) {
+		if !o.SeenEvent(logLine.EventId) {
 			fmt.Printf("[%s][%s] - %s\n", logLine.Timestamp, logLine.LogStreamName, logLine.Message)
 		}
 	}
