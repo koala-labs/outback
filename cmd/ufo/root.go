@@ -25,8 +25,9 @@ var (
 
 // Flags
 var (
-	flagCluster string
-	flagService string
+	flagCluster    string
+	flagService    string
+	flagConfigName string
 )
 
 // RootCmd represents the base command when called
@@ -54,6 +55,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
 	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
+	rootCmd.PersistentFlags().StringVar(&flagConfigName, "config", "config", "UFO config path")
 	rootCmd.MarkPersistentFlagRequired("cluster")
 }
 
@@ -63,7 +65,7 @@ func initConfig() {
 	handleError(err)
 
 	viper.AddConfigPath(cwd + "/.ufo")
-	viper.SetConfigName("config")
+	viper.SetConfigName(flagConfigName)
 
 	if err := viper.ReadInConfig(); err != nil {
 		fmt.Println("ufo config not found...")
