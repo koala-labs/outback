@@ -36,7 +36,7 @@ var rootCmd = &cobra.Command{
 	Use:     "ufo",
 	Short:   "Ufo is an ecs deployment tool",
 	Long:    ``,
-	Version: "0.18.5.8",
+	Version: "0.18.5.30",
 }
 
 // Execute adds all child commands so the root command sets flags appropriately.
