@@ -44,7 +44,7 @@ var serviceLogsCmd = &cobra.Command{
 	Use:   "logs <service-name>",
 	Short: "Show logs from tasks in a service",
 	Long: `Show logs from tasks in a service
-	
+
 	Return either a specific segment of service logs or tail logs in real-time
 	using the --follow option. Logs are prefixed by their log stream name which is
 	in the format of "fargate/\<service-name>/\<task-id>."
