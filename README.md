@@ -1,16 +1,21 @@
 # UFO CLI
 
-### Install Prerequisites
-  1.  `$ brew install go`
-  1. Setup your GOPATH
-			
-		export GOPATH="$HOME/go"
+## Install Prerequisites
 
-  1. Add go compiled binaries to your PATH
+1. Install go
 
-		export PATH=$GOPATH/bin:$PATH 
+    `$ brew install go`
 
-### Installing UFO
+2. Setup your GOPATH
+
+    `export GOPATH="$HOME/go"`
+
+3. Add go compiled binaries to your PATH
+
+    `export PATH=$GOPATH/bin:$PATH`
+
+## Installing UFO
+
 1. Install the UFO binary `go get -u gitlab.fuzzhq.com/Web-Ops/ufo/...`
     * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
 
@@ -20,7 +25,7 @@
 
 On first run, if there is not a `.ufo/config.json` config present in your current working directory, UFO will create this config for you with the default configuration below.
 
-```
+```json
 {
 	"profile": "default",
 	"region": "us-east-1",
@@ -45,9 +50,9 @@ UFO will relies on this config to run its operations.
 
 ### Commands
 
-- ufo deploy
-- ufo service
-- ufo task
+* ufo deploy
+* ufo service
+* ufo task
 
 #### Global Flags
 
@@ -66,7 +71,7 @@ A deployment consists of 5 steps necessary to update an AWS ECS Service.
 4. It creates a new task definition revision, only replacing its image with the newly tagged one
 5. It updates a service on ecs to use the newly created task definition
 
-- [deploy](#ufo-deploy)
+* [deploy](#ufo-deploy)
 
 ##### ufo deploy
 
@@ -86,9 +91,9 @@ restart your containers and ensure your service has the desired number of
 tasks running. Services can be used in concert with a load balancer to
 distribute traffic amongst the tasks in your service.
 
-- [env add](#ufo-service-env-add)
-- [env rm](#ufo-service-env-rm)
-- [env list](#ufo-service-env-list)
+* [env add](#ufo-service-env-add)
+* [env rm](#ufo-service-env-rm)
+* [env list](#ufo-service-env-list)
 
 ##### ufo service env add
 
@@ -127,7 +132,7 @@ Tasks are one-time executions of your container. Instances of your task are run
 until you manually stop them either through AWS APIs, the AWS Management
 Console, or until they are interrupted for any reason.
 
-- [run](#ufo-task-run)
+* [run](#ufo-task-run)
 
 ##### ufo task run
 
@@ -137,9 +142,8 @@ ufo task run --command "<command>"
 
 Run a one off tasks
 
-You must specify a cluster, service, and command to run. The command will use the image described in the task definition for the service that is specified. When specifying a command, the task definitions current command will be overriden with the one specified. 
+You must specify a cluster, service, and command to run. The command will use the image described in the task definition for the service that is specified. When specifying a command, the task definitions current command will be overriden with the one specified.
 
 There is also an option of creating command aliases in `.ufo/config.json`. Once a command alias is in the ufo config, specifying that alias via the --command flag will run the configured command.
 
 If the awslogs driver is configured for the service in which you base your task. Logs for that task will be sent to cloudwatch under the same log group and prefix as described in the task definition.
-
