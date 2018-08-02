@@ -1,6 +1,8 @@
 package term
 
 import (
+	"bufio"
+	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -37,4 +39,34 @@ func Clear() {
 	}
 
 	value()
+}
+
+// PrintStdout will create a stdout pipe for the passed in command
+func PrintStdout(command *exec.Cmd) error {
+	stdout, err := command.StdoutPipe()
+
+	if err != nil {
+		fmt.Printf("%v", err)
+		return fmt.Errorf("Error creating a stdout pipe")
+	}
+
+	if err := command.Start(); err != nil {
+		fmt.Printf("%v", err)
+		return fmt.Errorf("Error starting the command")
+	}
+
+	scanner := bufio.NewScanner(stdout)
+	go func() {
+		for scanner.Scan() {
+			out := scanner.Text()
+			fmt.Println(out)
+		}
+	}()
+
+	if err := command.Wait(); err != nil {
+		fmt.Printf("%v", err)
+		return fmt.Errorf("Error waiting on releases of executed command")
+	}
+
+	return nil
 }

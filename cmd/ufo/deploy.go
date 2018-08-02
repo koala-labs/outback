@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"bufio"
 	"fmt"
 	"os/exec"
 	"time"
@@ -20,17 +19,16 @@ const (
 )
 
 var (
-	flagDeployVerbose bool
-	flagECRLogin      bool
+	flagECRLogin bool
 )
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
 	Short: "Create a deployment",
-	Long: `A cluster must be specified via the --cluster flag. 
-	The --verbose flag can be input to enable verbose output. 
+	Long: `A cluster must be specified via the --cluster flag.
+	The --verbose flag can be input to enable verbose output.
 	The --login flag can be input to login to AWS ECR.`,
-	RunE: deployRun,
+	RunE: runDeploy,
 }
 
 type DeployOperation struct {
@@ -50,10 +48,14 @@ type DeployState struct {
 	Error       error
 }
 
-func deployRun(cmd *cobra.Command, args []string) error {
+func runDeploy(cmd *cobra.Command, args []string) error {
+	return fullDeploy(flagCluster, flagECRLogin)
+}
+
+func fullDeploy(cluster string, loggedIn bool) error {
 	var err error
 
-	c, err := cfg.getCluster(flagCluster)
+	c, err := cfg.getCluster(cluster)
 
 	if err != nil {
 		fmt.Printf("Error: %v", err)
@@ -76,7 +78,7 @@ func deployRun(cmd *cobra.Command, args []string) error {
 
 	op.s = make([]*DeployState, len(c.Services))
 
-	if flagECRLogin {
+	if loggedIn {
 		op.ecrLogin(cfg.Profile, cfg.Region)
 	}
 
@@ -86,7 +88,7 @@ func deployRun(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	op.InitDeployments(flagCluster)
+	op.InitDeployments(cluster)
 
 	ticker := time.NewTicker(deployPollingRate)
 
@@ -226,7 +228,7 @@ func (d *DeployOperation) ecrLogin(profile string, region string) error {
 	cmd := fmt.Sprintf("$(aws ecr get-login --no-include-email --region %s --profile %s)", region, profile)
 	getLogin := exec.Command("bash", "-c", cmd)
 
-	if err := printStdout(getLogin); err != nil {
+	if err := term.PrintStdout(getLogin); err != nil {
 		return ErrECRLogin
 	}
 
@@ -242,7 +244,7 @@ func (d *DeployOperation) buildImage(repo string, tag string, dockerfile string)
 
 	cmd := exec.Command("docker", "build", "-f", dockerfile, "-t", image, ".")
 
-	if err := printStdout(cmd); err != nil {
+	if err := term.PrintStdout(cmd); err != nil {
 		return ErrDockerBuild
 	}
 
@@ -257,7 +259,7 @@ func (d *DeployOperation) pushImage(repo string, tag string) error {
 
 	cmd := exec.Command("docker", "push", image)
 
-	if err := printStdout(cmd); err != nil {
+	if err := term.PrintStdout(cmd); err != nil {
 		return ErrDockerPush
 	}
 
@@ -303,38 +305,8 @@ func (s *DeployState) UpdateStatus(status string) {
 	s.LastStatus = status
 }
 
-func printStdout(command *exec.Cmd) error {
-	stdout, err := command.StdoutPipe()
-
-	if err != nil {
-		fmt.Printf("%v", err)
-		return fmt.Errorf("Error creating a stdout pipe")
-	}
-
-	if err := command.Start(); err != nil {
-		fmt.Printf("%v", err)
-		return fmt.Errorf("Error starting the command")
-	}
-
-	scanner := bufio.NewScanner(stdout)
-	go func() {
-		for scanner.Scan() {
-			out := scanner.Text()
-			fmt.Println(out)
-		}
-	}()
-
-	if err := command.Wait(); err != nil {
-		fmt.Printf("%v", err)
-		return fmt.Errorf("Error waiting on releases of executed command")
-	}
-
-	return nil
-}
-
 func init() {
 	rootCmd.AddCommand(deployCmd)
 
-	deployCmd.Flags().BoolVarP(&flagDeployVerbose, "verbose", "v", false, "Shows output of the deployment process")
 	deployCmd.Flags().BoolVarP(&flagECRLogin, "login", "l", false, "Log in to ECR during the deployment process")
 }

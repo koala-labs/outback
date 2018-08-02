@@ -9,13 +9,13 @@ import (
 	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
-var serviceEnvListCmd = &cobra.Command{
+var serviceListEnvCmd = &cobra.Command{
 	Use:   "list",
 	Short: "List environment variables",
-	Run:   listServiceEnv,
+	Run:   listEnv,
 }
 
-func listServiceEnv(cmd *cobra.Command, args []string) {
+func listEnv(cmd *cobra.Command, args []string) {
 	cfgCluster, err := cfg.getCluster(flagCluster)
 
 	handleError(err)
@@ -43,7 +43,7 @@ func listServiceEnv(cmd *cobra.Command, args []string) {
 
 func printEnvTable(t *ecs.TaskDefinition) {
 	for _, containerDefinition := range t.ContainerDefinitions {
-		longestName, longestValue := longNameAndValue(containerDefinition.Environment)
+		longestName, longestValue := longestNameAndValue(containerDefinition.Environment)
 		nameDashes := strings.Repeat("-", longestName+2) // Adding two because of the table padding
 		valueDashes := strings.Repeat("-", longestValue+2)
 
@@ -62,8 +62,8 @@ func printEnvTable(t *ecs.TaskDefinition) {
 	}
 }
 
-// longNameAndValue returns the length of the longest Name and Value
-func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
+// longestNameAndValue returns the length of the longest Name and Value
+func longestNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 	for _, value := range e {
 		nameLength := len(*value.Name)
 		valueLength := len(*value.Value)
@@ -78,5 +78,5 @@ func longNameAndValue(e []*ecs.KeyValuePair) (longName int, longVal int) {
 }
 
 func init() {
-	serviceEnvCmd.AddCommand(serviceEnvListCmd)
+	serviceEnvCmd.AddCommand(serviceListEnvCmd)
 }

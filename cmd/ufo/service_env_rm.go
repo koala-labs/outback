@@ -10,18 +10,18 @@ import (
 )
 
 var (
-	flagServiceEnvRmEnvVars []string
+	flagServiceRmEnvVars []string
 )
 
-var serviceEnvRmCmd = &cobra.Command{
+var serviceRmEnvCmd = &cobra.Command{
 	Use:   "rm",
 	Short: "Remove environment variables",
 	Long: `Removes the environment variable specified via the --key flag. Specify --key with
 	a key name multiple times to unset multiple variables.`,
-	RunE: envRm,
+	RunE: rmEnv,
 }
 
-func envRm(cmd *cobra.Command, args []string) error {
+func rmEnv(cmd *cobra.Command, args []string) error {
 	u := UFO.New(ufoCfg)
 
 	c, err := u.GetCluster(flagCluster)
@@ -42,7 +42,7 @@ func envRm(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	newDefinition, err := removeEnvVarsFromTaskDefinition(t, flagServiceEnvRmEnvVars)
+	newDefinition, err := removeEnvVarsFromTaskDefinition(t, flagServiceRmEnvVars)
 
 	if err != nil {
 		return err
@@ -60,7 +60,7 @@ func envRm(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println("The key(s) " + strings.Join(flagServiceEnvRmEnvVars, ", ") + " will be removed from your task definition")
+	fmt.Println("The key(s) " + strings.Join(flagServiceRmEnvVars, ", ") + " will be removed from your task definition")
 
 	return nil
 }
@@ -92,7 +92,7 @@ func removeEnvVarsFromTaskDefinition(t *ecs.TaskDefinition, removals []string) (
 }
 
 func init() {
-	serviceEnvCmd.AddCommand(serviceEnvRmCmd)
+	serviceEnvCmd.AddCommand(serviceRmEnvCmd)
 
-	serviceEnvRmCmd.Flags().StringSliceVarP(&flagServiceEnvRmEnvVars, "key", "k", []string{}, "Environment variables to remove e.g. APP_ENV")
+	serviceRmEnvCmd.Flags().StringSliceVarP(&flagServiceRmEnvVars, "key", "k", []string{}, "Environment variables to remove e.g. APP_ENV")
 }

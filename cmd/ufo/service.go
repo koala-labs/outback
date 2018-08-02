@@ -16,4 +16,7 @@ var serviceCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(serviceCmd)
+
+	serviceCmd.MarkPersistentFlagFilename("cluster")
+	serviceCmd.MarkPersistentFlagFilename("service")
 }

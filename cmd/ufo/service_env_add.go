@@ -11,18 +11,18 @@ import (
 )
 
 var (
-	flagServiceEnvAddEnvVars []string
+	flagServiceAddEnvVars []string
 )
 
-var serviceEnvAddCmd = &cobra.Command{
+var serviceAddEnvCmd = &cobra.Command{
 	Use:   "add",
 	Short: "Add/Update environment variables",
 	Long: `At least one environment variable must be specified via the --env flag. Specify
 	--env with a key=value parameter multiple times to add multiple variables.`,
-	RunE: envAdd,
+	RunE: addEnvVar,
 }
 
-func envAdd(cmd *cobra.Command, args []string) error {
+func addEnvVar(cmd *cobra.Command, args []string) error {
 	u := UFO.New(ufoCfg)
 
 	c, err := u.GetCluster(flagCluster)
@@ -43,7 +43,7 @@ func envAdd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	updatedDefinition, err := updateTaskDefinition(t, flagServiceEnvAddEnvVars)
+	updatedDefinition, err := updateTaskDefinition(t, flagServiceAddEnvVars)
 
 	if err != nil {
 		return err
@@ -61,7 +61,7 @@ func envAdd(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	fmt.Println("Environment variable(s) " + strings.Join(flagServiceEnvAddEnvVars, ", ") + " will be added")
+	fmt.Println("Environment variable(s) " + strings.Join(flagServiceAddEnvVars, ", ") + " will be added")
 
 	return nil
 }
@@ -128,7 +128,7 @@ func contains(keyVals []*ecs.KeyValuePair, keyVal *ecs.KeyValuePair) (*int, bool
 }
 
 func init() {
-	serviceEnvCmd.AddCommand(serviceEnvAddCmd)
+	serviceEnvCmd.AddCommand(serviceAddEnvCmd)
 
-	serviceEnvAddCmd.Flags().StringSliceVarP(&flagServiceEnvAddEnvVars, "env", "e", []string{}, "Environment variables to add e.g. key=value")
+	serviceAddEnvCmd.Flags().StringSliceVarP(&flagServiceAddEnvVars, "env", "e", []string{}, "Environment variables to add e.g. key=value")
 }
