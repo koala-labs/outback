@@ -3,19 +3,11 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 
 	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
-)
-
-// Config
-const (
-	configPath = "/.ufo/config.json"
-	configDir  = "/.ufo/"
-	configFile = "/config.json"
 )
 
 var (
@@ -49,44 +41,32 @@ func Execute() {
 }
 
 func init() {
-	cobra.OnInitialize(initConfig)
+	cobra.OnInitialize(loadConfig)
 	// Here you will define your flags and configuration settings
 	// Cobra supports Persistent Flags which if defined here will be global for your application
 
 	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
 	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
-	rootCmd.PersistentFlags().StringVar(&flagConfigName, "config", "config", "UFO config path")
-	rootCmd.MarkPersistentFlagRequired("cluster")
+	rootCmd.Flags().StringVar(&flagConfigName, "config", "config", "ufo config name")
 }
 
-func initConfig() {
+func loadConfig() {
 	cwd, err := os.Getwd()
 
-	handleError(err)
+	if flagConfigName != "" {
+		viper.AddConfigPath(cwd + "/.ufo")
+		viper.SetConfigName(flagConfigName)
 
-	viper.AddConfigPath(cwd + "/.ufo")
-	viper.SetConfigName(flagConfigName)
-
-	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("ufo config not found...")
-		fmt.Println("Initializing ufo config.")
-
-		createDirectory(filepath.Join(cwd, configDir))
-
-		f, err := createConfig(filepath.Join(cwd, configPath))
+		if err := viper.ReadInConfig(); err != nil {
+			fmt.Println("ufo config not found")
+		}
 
 		handleError(err)
 
-		defer f.Close()
-
-		fmt.Fprint(f, configTemplate)
-
-		fmt.Println("ufo config initialized")
-	}
-
-	if err := viper.Unmarshal(&cfg); err != nil {
-		fmt.Printf("Unable to decode config into struct, %v", err)
-		os.Exit(1)
+		if err := viper.Unmarshal(&cfg); err != nil {
+			fmt.Printf("Unable to decode config, %v", err)
+			os.Exit(1)
+		}
 	}
 
 	ufoCfg = UFO.Config{

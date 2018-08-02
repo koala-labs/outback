@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"io/ioutil"
+	"log"
 	"os"
+	"strings"
 )
 
 type Config struct {
@@ -24,30 +27,19 @@ type Task struct {
 	Command string `mapstructure:"command"`
 }
 
-const configTemplate = `{
-	"profile": "default",
-	"region": "us-east-1",
-	"repo": "default.dkr.ecr.us-west-1.amazonaws.com/default",
-	"clusters": [
-		{
-			"name": "dev",
-			"services": ["api"],
-			"dockerfile": "Dockerfile"
-		}
-	],
-	"tasks": [
-		{
-			"name": "migrate",
-			"command": "php artisan migrate"
-		}
-	]
+func (c *Config) getConfigs() []string {
+	cwd, err := os.Getwd()
+	files, err := ioutil.ReadDir(cwd + "/.ufo")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var configs []string
+	for _, f := range files {
+		name := strings.TrimSuffix(f.Name(), ".json")
+		configs = append(configs, name)
+	}
+	return configs
 }
-`
-
-const gitIgnoreString = `
-# UFO Config
-.ufo/
-`
 
 func (c *Config) getCluster(cluster string) (*Cluster, error) {
 	for _, c := range c.Clusters {
@@ -57,6 +49,24 @@ func (c *Config) getCluster(cluster string) (*Cluster, error) {
 	}
 
 	return nil, ErrClusterNotFound
+}
+
+func (c *Config) getClusters() []string {
+	var clusters []string
+	for _, cluster := range c.Clusters {
+		fmt.Printf(cluster.Name)
+		clusters = append(clusters, cluster.Name)
+	}
+	return clusters
+}
+
+func (c *Config) getServices(in string) []string {
+	for _, cluster := range c.Clusters {
+		if cluster.Name == in {
+			return cluster.Services
+		}
+	}
+	return []string{}
 }
 
 func (c *Config) getService(services []string, service string) (*string, error) {
@@ -77,27 +87,4 @@ func (c *Config) getCommand(name string) (*string, error) {
 	}
 
 	return nil, ErrCommandNotFound
-}
-
-func createDirectory(path string) {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
-		fmt.Printf("Creating %s\n", path)
-		os.Mkdir(path, os.ModePerm)
-	}
-}
-
-func createConfig(path string) (*os.File, error) {
-	if _, err := os.Stat(path); !os.IsNotExist(err) {
-		return nil, ErrConfigFileAlreadyExists
-	}
-
-	fmt.Printf("Creating %s\n", path)
-
-	f, err := os.Create(path)
-
-	if err != nil {
-		return nil, ErrCouldNotCreateConfig
-	}
-
-	return f, nil
 }
