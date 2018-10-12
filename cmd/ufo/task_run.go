@@ -69,7 +69,7 @@ func run(cluster string, service string, command string) error {
 		return err
 	}
 
-	fmt.Printf("Running task on cluster %s with command %s", cluster, command)
+	fmt.Printf("Running task on cluster %s with command %s\n", cluster, command)
 
 	return nil
 }
