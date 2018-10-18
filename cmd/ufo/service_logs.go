@@ -17,6 +17,7 @@ type Empty struct{}
 type LogsOperation struct {
 	LogGroupName   string
 	Namespace      string
+	Service        string
 	EndTime        time.Time
 	StartTime      time.Time
 	Filter         string
@@ -28,7 +29,7 @@ type LogsOperation struct {
 const (
 	timeFormat          = "2006-01-02 15:04:05"
 	timeFormatWithZone  = "2006-01-02 15:04:05 MST"
-	logStreamNameFormat = "fargate/%s/%s"
+	logStreamNameFormat = "%s/%s/%s"
 	eventCacheSize      = 10000
 )
 
@@ -73,6 +74,7 @@ func getOrFollowLogs(cmd *cobra.Command, args []string) {
 		Filter:       flagServiceLogsFilter,
 		Follow:       flagServiceLogsFollow,
 		Namespace:    args[0],
+		Service:      "",
 	}
 
 	o.AddTasks(flagServiceLogsTasks)
@@ -100,7 +102,7 @@ func (o *LogsOperation) AddEndTime(rawEndTime string) {
 
 func (o *LogsOperation) AddTasks(tasks []string) {
 	for _, task := range tasks {
-		logStreamName := fmt.Sprintf(logStreamNameFormat, o.Namespace, task)
+		logStreamName := fmt.Sprintf(logStreamNameFormat, o.Service, o.Namespace, task)
 		o.LogStreamNames = append(o.LogStreamNames, logStreamName)
 	}
 }

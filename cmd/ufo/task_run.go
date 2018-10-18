@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/spf13/cobra"
 	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
@@ -63,13 +64,39 @@ func run(cluster string, service string, command string) error {
 		return err
 	}
 
-	_, err = ufo.RunTask(c, t, command)
+	taskOutput, err := ufo.RunTask(c, t, command)
 
 	if err != nil {
 		return err
 	}
 
 	fmt.Printf("Running task on cluster %s with command %s\n", cluster, command)
+
+	td, err := ufo.GetTaskDefinition(c, s)
+
+	if err != nil {
+		return err
+	}
+
+	logGroup := td.ContainerDefinitions[0].LogConfiguration.Options["awslogs-group"]
+	logPrefix := td.ContainerDefinitions[0].LogConfiguration.Options["awslogs-stream-prefix"]
+
+	o := &LogsOperation{
+		LogGroupName: *logGroup,
+		Filter:       "",
+		Follow:       true,
+		Namespace:    *logPrefix,
+		Service:      service,
+	}
+
+	r := regexp.MustCompile(`\/([A-Za-z0-9-]+)`)
+	taskID := r.FindStringSubmatch(*taskOutput.Tasks[0].TaskArn)[1]
+
+	o.AddTasks([]string{taskID})
+	o.AddStartTime("")
+	o.AddEndTime("")
+
+	followLogs(o)
 
 	return nil
 }
