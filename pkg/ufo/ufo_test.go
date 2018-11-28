@@ -177,8 +177,8 @@ func TestUFONew(t *testing.T) {
 	}
 
 	ufo := New(&AwsConfig{
-		profile: "profile",
-		region:  "region",
+		Profile: "profile",
+		Region:  "region",
 	})
 
 	for i, c := range cases {
@@ -187,99 +187,6 @@ func TestUFONew(t *testing.T) {
 		}
 	}
 }
-
-// func TestUFOUseCluster(t *testing.T) {
-// 	name := "cluster1"
-// 	cases := []struct {
-// 		Expected *ecs.Cluster
-// 	}{
-// 		{
-// 			Expected: &ecs.Cluster{
-// 				ClusterName: &name,
-// 			},
-// 		},
-// 	}
-
-// 	ufo := UFO{
-// 		ECS:   mockedECSClient{},
-// 		ECR:   mockedECRClient{},
-// 	}
-
-// 	for i, c := range cases {
-// 		ufo.UseCluster(c.Expected)
-
-// 		if a, e := *ufo.State.Cluster.ClusterName, *c.Expected.ClusterName; a != e {
-// 			t.Errorf("%d, expected %v cluster, got %v", i, e, a)
-// 		}
-// 	}
-// }
-// func TestUFOUseService(t *testing.T) {
-// 	name := "service1"
-// 	cases := []struct {
-// 		Expected *ecs.Service
-// 	}{
-// 		{
-// 			Expected: &ecs.Service{
-// 				ServiceName: &name,
-// 			},
-// 		},
-// 	}
-
-// 	ufo := UFO{
-// 		ECS:   mockedECSClient{},
-// 		ECR:   mockedECRClient{},
-// 	}
-
-// 	for i, c := range cases {
-// 		ufo.UseService(c.Expected)
-
-// 		if a, e := *ufo.State.Service.ServiceName, *c.Expected.ServiceName; a != e {
-// 			t.Errorf("%d, expected %v service, got %v", i, e, a)
-// 		}
-// 	}
-// }
-// func TestUFOUseTaskDefinition(t *testing.T) {
-// 	fam := "family1"
-// 	command := "echo"
-// 	commands := []*string{&command, &command}
-// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
-// 	cases := []struct {
-// 		Expected *ecs.TaskDefinition
-// 	}{
-// 		{
-// 			Expected: &ecs.TaskDefinition{
-// 				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 					Command: commands,
-// 					Image:   &image,
-// 				}},
-// 				Family: &fam,
-// 			},
-// 		},
-// 	}
-
-// 	ufo := UFO{
-// 		ECS:   mockedECSClient{},
-// 		ECR:   mockedECRClient{},
-// 	}
-
-// 	for i, c := range cases {
-// 		ufo.UseTaskDefinition(c.Expected)
-// 		actualContainerDefinition := ufo.State.TaskDefinition.ContainerDefinitions[0]
-// 		expectedContainerDefinition := c.Expected.ContainerDefinitions[0]
-
-// 		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
-// 			t.Errorf("%d, expected %v task definition, got %v", i, e, a)
-// 		}
-
-// 		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
-// 			t.Errorf("%d, expected %v family, got %v", i, e, a)
-// 		}
-
-// 		if a, e := *actualContainerDefinition.Image, *expectedContainerDefinition.Image; a != e {
-// 			t.Errorf("%d, expected %v image, got %v", i, e, a)
-// 		}
-// 	}
-// }
 
 func TestUFOClusters(t *testing.T) {
 	var cluster1, cluster2, nextToken string = "cluster1", "cluster2", ""
