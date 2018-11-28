@@ -2,7 +2,7 @@
 
 
 [[projects]]
-  digest = "1:cc4084af9748e075a48d3f85700b0b98da5552737229dceaec8d3be49f3756c4"
+  digest = "1:dfe69f4114198b4d9ec8ef6299ef47f0ad398fd1f39467b15c18418413e0b396"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -43,8 +43,8 @@
     "service/sts",
   ]
   pruneopts = "UT"
-  revision = "34ab03ee1a2b90b3baf97ff666397c8fb9b8714b"
-  version = "v1.15.64"
+  revision = "64fc3d5c40fffc817c1cc1c1d89a6e482bf1120d"
+  version = "v1.15.77"
 
 [[projects]]
   digest = "1:abeb38ade3f32a92943e5be54f55ed6d6e3b6602761d74b4aab4c9dd45c18abd"
@@ -156,6 +156,14 @@
   version = "v1.2.0"
 
 [[projects]]
+  digest = "1:40e195917a951a8bf867cd05de2a46aaf1806c50cf92eebf4c16f78cd196f747"
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
+
+[[projects]]
   digest = "1:6a4a11ba764a56d2758899ec6f3848d24698d48442ebce85ee7a3f63284526cd"
   name = "github.com/spf13/afero"
   packages = [
@@ -208,11 +216,11 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:466e5917ea5f69d435d0ab3015dc4b57b80d34a6caf1104097ac82ab462b86e4"
+  digest = "1:a62e80faf19c93dcbd7954a26fdb51acbfcb4b7161966adf1de531e593c4834a"
   name = "golang.org/x/sys"
   packages = ["unix"]
   pruneopts = "UT"
-  revision = "7e31e0c00fa05cb5fbf4347b585621d6709e19a4"
+  revision = "93218def8b18e66adbdab3eca8ec334700329f1f"
 
 [[projects]]
   digest = "1:8029e9743749d4be5bc9f7d42ea1659471767860f0cdc34d37c3111bd308a295"
@@ -230,7 +238,7 @@
   version = "v0.3.0"
 
 [[projects]]
-  digest = "1:6a352582a7f21849e2f007fc5d684a0443ca16c889d3036f3e5767fa4e03862e"
+  digest = "1:3b91526914d053437079b3ddfcd2e4bc337e0c3657ec139dcb4855525b0b0700"
   name = "gopkg.in/AlecAivazis/survey.v1"
   packages = [
     ".",
@@ -238,8 +246,8 @@
     "terminal",
   ]
   pruneopts = "UT"
-  revision = "0be4439d90f533f1ea2e0adddd5b1a405e6f5559"
-  version = "v1.6.3"
+  revision = "3409e8256f5cf23a9e9ee2a8816c4c5da78a181d"
+  version = "v1.6.4"
 
 [[projects]]
   digest = "1:342378ac4dcb378a5448dd723f0784ae519383532f5e70ade24132c4c8693202"
@@ -254,7 +262,6 @@
   analyzer-version = 1
   input-imports = [
     "github.com/aws/aws-sdk-go/aws",
-    "github.com/aws/aws-sdk-go/aws/awserr",
     "github.com/aws/aws-sdk-go/aws/session",
     "github.com/aws/aws-sdk-go/service/cloudwatchlogs",
     "github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface",
@@ -263,6 +270,7 @@
     "github.com/aws/aws-sdk-go/service/ecs",
     "github.com/aws/aws-sdk-go/service/ecs/ecsiface",
     "github.com/hashicorp/golang-lru",
+    "github.com/pkg/errors",
     "github.com/spf13/cobra",
     "github.com/spf13/viper",
     "gopkg.in/AlecAivazis/survey.v1",
