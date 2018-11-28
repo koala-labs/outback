@@ -44,7 +44,7 @@ func runTask(cmd *cobra.Command, args []string) {
 }
 
 func run(cluster string, service string, command string) error {
-	ufo := UFO.New(ufoCfg)
+	ufo := UFO.New(awsConfig)
 
 	c, err := ufo.GetCluster(cluster)
 
@@ -96,7 +96,26 @@ func run(cluster string, service string, command string) error {
 	o.AddStartTime("")
 	o.AddEndTime("")
 
-	followLogs(o)
+	waiting := make(chan error)
+
+	go func() {
+		waiting <- ufo.IsTaskRunning(c.ClusterArn, &taskID)
+	}()
+
+	go func() {
+		followLogs(o)
+	}()
+
+	loop := false
+	for !loop {
+		select {
+		case err := <-waiting:
+			if err != nil {
+				return err
+			}
+			loop = true
+		}
+	}
 
 	return nil
 }

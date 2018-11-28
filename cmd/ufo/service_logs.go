@@ -165,7 +165,7 @@ func followLogs(o *LogsOperation) {
 }
 
 func getLogs(o *LogsOperation) {
-	u := UFO.New(ufoCfg)
+	u := UFO.New(awsConfig)
 
 	in := &ufo.GetLogsInput{
 		LogStreamNames: o.LogStreamNames,
@@ -178,7 +178,7 @@ func getLogs(o *LogsOperation) {
 	logs, _ := u.GetLogs(in)
 
 	for _, logLine := range logs {
-		if !o.SeenEvent(logLine.EventId) {
+		if !o.SeenEvent(logLine.EventID) {
 			fmt.Printf("[%s][%s] - %s\n", logLine.Timestamp, logLine.LogStreamName, logLine.Message)
 		}
 	}
