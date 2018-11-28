@@ -1,12 +1,14 @@
 package ufo
 
 import (
-	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
+	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+
 	"github.com/aws/aws-sdk-go/service/ecr"
+	"github.com/pkg/errors"
 
 	"github.com/aws/aws-sdk-go/aws"
 
@@ -21,6 +23,10 @@ type mockedECRClient struct {
 
 type mockedECSClient struct {
 	ecsiface.ECSAPI
+}
+
+type mockedCWLClient struct {
+	cloudwatchlogsiface.CloudWatchLogsAPI
 }
 
 type mockedDescribeImages struct {
@@ -161,127 +167,119 @@ func (m mockedIsServiceRunning) DescribeTasks(in *ecs.DescribeTasksInput) (*ecs.
 	return m.DescribeTasksResp, m.DescribeTasksError
 }
 
-func TestCreateFlyUFO(t *testing.T) {
+func TestUFONew(t *testing.T) {
 	cases := []struct {
-		Expected *State
+		Expected *UFO
 	}{
 		{
-			Expected: &State{},
+			Expected: &UFO{},
 		},
 	}
 
-	config := Config{
-		Profile: aws.String("profile"),
-		Region:  aws.String("region"),
-	}
-
-	ufo := Fly(config)
+	ufo := New(&AwsConfig{
+		profile: "profile",
+		region:  "region",
+	})
 
 	for i, c := range cases {
-		if a, e := *ufo.State, *c.Expected; a != e {
+		if a, e := reflect.TypeOf(ufo), reflect.TypeOf(c.Expected); a != e {
 			t.Errorf("%d, expected %v state, got %v", i, e, a)
 		}
 	}
 }
 
-func TestUFOUseCluster(t *testing.T) {
-	name := "cluster1"
-	cases := []struct {
-		Expected *ecs.Cluster
-	}{
-		{
-			Expected: &ecs.Cluster{
-				ClusterName: &name,
-			},
-		},
-	}
+// func TestUFOUseCluster(t *testing.T) {
+// 	name := "cluster1"
+// 	cases := []struct {
+// 		Expected *ecs.Cluster
+// 	}{
+// 		{
+// 			Expected: &ecs.Cluster{
+// 				ClusterName: &name,
+// 			},
+// 		},
+// 	}
 
-	ufo := UFO{
-		l:     &logger{},
-		State: &State{},
-		ECS:   mockedECSClient{},
-		ECR:   mockedECRClient{},
-	}
+// 	ufo := UFO{
+// 		ECS:   mockedECSClient{},
+// 		ECR:   mockedECRClient{},
+// 	}
 
-	for i, c := range cases {
-		ufo.UseCluster(c.Expected)
+// 	for i, c := range cases {
+// 		ufo.UseCluster(c.Expected)
 
-		if a, e := *ufo.State.Cluster.ClusterName, *c.Expected.ClusterName; a != e {
-			t.Errorf("%d, expected %v cluster, got %v", i, e, a)
-		}
-	}
-}
-func TestUFOUseService(t *testing.T) {
-	name := "service1"
-	cases := []struct {
-		Expected *ecs.Service
-	}{
-		{
-			Expected: &ecs.Service{
-				ServiceName: &name,
-			},
-		},
-	}
+// 		if a, e := *ufo.State.Cluster.ClusterName, *c.Expected.ClusterName; a != e {
+// 			t.Errorf("%d, expected %v cluster, got %v", i, e, a)
+// 		}
+// 	}
+// }
+// func TestUFOUseService(t *testing.T) {
+// 	name := "service1"
+// 	cases := []struct {
+// 		Expected *ecs.Service
+// 	}{
+// 		{
+// 			Expected: &ecs.Service{
+// 				ServiceName: &name,
+// 			},
+// 		},
+// 	}
 
-	ufo := UFO{
-		l:     &logger{},
-		State: &State{},
-		ECS:   mockedECSClient{},
-		ECR:   mockedECRClient{},
-	}
+// 	ufo := UFO{
+// 		ECS:   mockedECSClient{},
+// 		ECR:   mockedECRClient{},
+// 	}
 
-	for i, c := range cases {
-		ufo.UseService(c.Expected)
+// 	for i, c := range cases {
+// 		ufo.UseService(c.Expected)
 
-		if a, e := *ufo.State.Service.ServiceName, *c.Expected.ServiceName; a != e {
-			t.Errorf("%d, expected %v service, got %v", i, e, a)
-		}
-	}
-}
-func TestUFOUseTaskDefinition(t *testing.T) {
-	fam := "family1"
-	command := "echo"
-	commands := []*string{&command, &command}
-	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
-	cases := []struct {
-		Expected *ecs.TaskDefinition
-	}{
-		{
-			Expected: &ecs.TaskDefinition{
-				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-					Command: commands,
-					Image:   &image,
-				}},
-				Family: &fam,
-			},
-		},
-	}
+// 		if a, e := *ufo.State.Service.ServiceName, *c.Expected.ServiceName; a != e {
+// 			t.Errorf("%d, expected %v service, got %v", i, e, a)
+// 		}
+// 	}
+// }
+// func TestUFOUseTaskDefinition(t *testing.T) {
+// 	fam := "family1"
+// 	command := "echo"
+// 	commands := []*string{&command, &command}
+// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366"
+// 	cases := []struct {
+// 		Expected *ecs.TaskDefinition
+// 	}{
+// 		{
+// 			Expected: &ecs.TaskDefinition{
+// 				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 					Command: commands,
+// 					Image:   &image,
+// 				}},
+// 				Family: &fam,
+// 			},
+// 		},
+// 	}
 
-	ufo := UFO{
-		l:     &logger{},
-		State: &State{},
-		ECS:   mockedECSClient{},
-		ECR:   mockedECRClient{},
-	}
+// 	ufo := UFO{
+// 		ECS:   mockedECSClient{},
+// 		ECR:   mockedECRClient{},
+// 	}
 
-	for i, c := range cases {
-		ufo.UseTaskDefinition(c.Expected)
-		actualContainerDefinition := ufo.State.TaskDefinition.ContainerDefinitions[0]
-		expectedContainerDefinition := c.Expected.ContainerDefinitions[0]
+// 	for i, c := range cases {
+// 		ufo.UseTaskDefinition(c.Expected)
+// 		actualContainerDefinition := ufo.State.TaskDefinition.ContainerDefinitions[0]
+// 		expectedContainerDefinition := c.Expected.ContainerDefinitions[0]
 
-		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
-			t.Errorf("%d, expected %v task definition, got %v", i, e, a)
-		}
+// 		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
+// 			t.Errorf("%d, expected %v task definition, got %v", i, e, a)
+// 		}
 
-		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
-			t.Errorf("%d, expected %v family, got %v", i, e, a)
-		}
+// 		if a, e := *ufo.State.TaskDefinition.Family, *c.Expected.Family; a != e {
+// 			t.Errorf("%d, expected %v family, got %v", i, e, a)
+// 		}
 
-		if a, e := *actualContainerDefinition.Image, *expectedContainerDefinition.Image; a != e {
-			t.Errorf("%d, expected %v image, got %v", i, e, a)
-		}
-	}
-}
+// 		if a, e := *actualContainerDefinition.Image, *expectedContainerDefinition.Image; a != e {
+// 			t.Errorf("%d, expected %v image, got %v", i, e, a)
+// 		}
+// 	}
+// }
 
 func TestUFOClusters(t *testing.T) {
 	var cluster1, cluster2, nextToken string = "cluster1", "cluster2", ""
@@ -303,10 +301,8 @@ func TestUFOClusters(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListClusters{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListClusters{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		clusters, err := ufo.Clusters()
@@ -333,23 +329,21 @@ func TestUFOClustersError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrFailedToListClusters,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errFailedToListClusters),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListClusters{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListClusters{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.Clusters()
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -374,10 +368,8 @@ func TestUFOServices(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListServices{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListServices{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		services, err := ufo.Services(&ecs.Cluster{})
@@ -404,22 +396,20 @@ func TestUFOServicesError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrFailedToListServices,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errFailedToListServices),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListServices{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListServices{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.Services(&ecs.Cluster{})
 
-		if a, e := err, c.Expected; a != e {
+		if a, e := err, c.Expected; a.Error() != e.Error() {
 			t.Errorf("%d, expected %v error, got %v", i, e, a)
 		}
 	}
@@ -445,10 +435,8 @@ func TestUFORunningTasks(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListTasks{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListTasks{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		tasks, err := ufo.RunningTasks(&ecs.Cluster{}, &ecs.Service{})
@@ -475,23 +463,21 @@ func TestUFORunningTasksError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrFailedToListRunningTasks,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errFailedToListRunningTasks),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedListTasks{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedListTasks{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.RunningTasks(&ecs.Cluster{}, &ecs.Service{})
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -518,10 +504,8 @@ func TestUFOGetCluster(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeClusters{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeClusters{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		cluster, err := ufo.GetCluster("test-cluster")
@@ -545,22 +529,20 @@ func TestUFOGetClusterError(t *testing.T) {
 			Resp: &ecs.DescribeClustersOutput{
 				Clusters: []*ecs.Cluster{},
 			},
-			Expected: ErrClusterNotFound,
+			Expected: errors.Wrap(nil, errClusterNotFound),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeClusters{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeClusters{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetCluster("test-cluster")
 
 		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -571,23 +553,21 @@ func TestUFOGetClusterError2(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveCluster,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveCluster),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeClusters{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeClusters{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetCluster("test-cluster")
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -615,10 +595,8 @@ func TestUFOGetService(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeServices{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeServices{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		service, err := ufo.GetService(&ecs.Cluster{}, "test-service")
@@ -642,22 +620,20 @@ func TestUFOGetServiceError(t *testing.T) {
 			Resp: &ecs.DescribeServicesOutput{
 				Services: []*ecs.Service{},
 			},
-			Expected: ErrServiceNotFound,
+			Expected: errors.Wrap(nil, errServiceNotFound),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeServices{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeServices{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetService(&ecs.Cluster{}, "test-service")
 
 		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -668,23 +644,21 @@ func TestUFOGetServiceError2(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveService,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveService),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeServices{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeServices{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetService(&ecs.Cluster{}, "test-cluster")
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -722,10 +696,8 @@ func TestUFOGetTaskDefinition(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTaskDefinition{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTaskDefinition{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		taskDef, err := ufo.GetTaskDefinition(&ecs.Cluster{}, &ecs.Service{})
@@ -757,23 +729,21 @@ func TestUFOGetTaskDefinitionError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveTaskDefinition,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTaskDefinition),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTaskDefinition{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTaskDefinition{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetTaskDefinition(&ecs.Cluster{}, &ecs.Service{})
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -803,10 +773,8 @@ func TestUFOGetTasks(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTasks{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTasks{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		tasks, err := ufo.GetTasks(&ecs.Cluster{}, []*string{})
@@ -837,23 +805,21 @@ func TestUFOGetTasksError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveTasks,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTasks),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTasks{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTasks{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetTasks(&ecs.Cluster{}, aws.StringSlice([]string{"task1", "task2"}))
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -890,10 +856,8 @@ func TestUFOGetImages(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedECSClient{},
-			ECR:   &mockedDescribeImages{Resp: c.Resp},
+			ECS: mockedECSClient{},
+			ECR: &mockedDescribeImages{Resp: c.Resp},
 		}
 
 		images, err := ufo.GetImages(&ecs.TaskDefinition{
@@ -929,17 +893,15 @@ func TestUFOGetImagesError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveImages,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveImages),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedECSClient{},
-			ECR:   &mockedDescribeImages{Resp: nil, Error: c.Error},
+			ECS: mockedECSClient{},
+			ECR: &mockedDescribeImages{Resp: nil, Error: c.Error},
 		}
 
 		_, err := ufo.GetImages(&ecs.TaskDefinition{
@@ -951,8 +913,8 @@ func TestUFOGetImagesError(t *testing.T) {
 			TaskDefinitionArn: aws.String("taskdefarn"),
 		})
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -984,10 +946,8 @@ func TestUFOGetLastDeployedCommit(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTaskDefinition{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTaskDefinition{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		commit, err := ufo.GetLastDeployedCommit("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:ea13366")
@@ -1012,16 +972,14 @@ func TestUFOGetLastDeployedCommitError(t *testing.T) {
 				TaskDefinition: &ecs.TaskDefinition{
 					ContainerDefinitions: []*ecs.ContainerDefinition{},
 				}},
-			Expected: ErrInvalidTaskDefinition,
+			Expected: errors.Wrap(nil, errInvalidTaskDefinition),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   &mockedDescribeTaskDefinition{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: &mockedDescribeTaskDefinition{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetLastDeployedCommit("error-taskdef")
@@ -1038,23 +996,21 @@ func TestUFOGetLastDeployedCommitError2(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRetrieveTaskDefinition,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTaskDefinition),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedDescribeTaskDefinition{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: mockedDescribeTaskDefinition{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.GetLastDeployedCommit("error")
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -1092,10 +1048,8 @@ func TestRegisterTaskDefinitionWithEnvVars(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		def, err := ufo.RegisterTaskDefinitionWithEnvVars(&ecs.TaskDefinition{
@@ -1133,23 +1087,21 @@ func TestRegisterTaskDefinitionWithEnvVarsError(t *testing.T) {
 		{
 			Resp:     &ecs.RegisterTaskDefinitionOutput{},
 			Input:    &ecs.ContainerDefinition{},
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRegisterTaskDefinition,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRegisterTaskDefinition),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: mockedRegisterTaskDefinition{Resp: c.Resp, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.RegisterTaskDefinitionWithEnvVars(&ecs.TaskDefinition{})
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
+		if a, e := err, c.Expected; a.Error() != e.Error() {
+			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
@@ -1193,10 +1145,8 @@ func TestUFORunTask(t *testing.T) {
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedRunTask{Resp: c.Resp},
-			ECR:   mockedECRClient{},
+			ECS: mockedRunTask{Resp: c.Resp},
+			ECR: mockedECRClient{},
 		}
 
 		ranTasks, err := ufo.RunTask(
@@ -1246,17 +1196,15 @@ func TestUFORunTaskError(t *testing.T) {
 		Expected error
 	}{
 		{
-			Error:    awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected: ErrCouldNotRunTask,
+			Error:    errors.New("test-error"),
+			Expected: errors.Wrap(errors.New("test-error"), errCouldNotRunTask),
 		},
 	}
 
 	for i, c := range cases {
 		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS:   mockedRunTask{Resp: nil, Error: c.Error},
-			ECR:   mockedECRClient{},
+			ECS: mockedRunTask{Resp: nil, Error: c.Error},
+			ECR: mockedECRClient{},
 		}
 
 		_, err := ufo.RunTask(
@@ -1270,377 +1218,426 @@ func TestUFORunTaskError(t *testing.T) {
 			"error",
 		)
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
-		}
-	}
-}
-
-func TestUFODeploy(t *testing.T) {
-	emptyValue := ""
-	fam := "family1"
-	command := "echo"
-	commands := []*string{&command, &command}
-	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-	commit := "8c018c8"
-	newImage := fmt.Sprintf("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:%s", commit)
-
-	cases := []struct {
-		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
-		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
-		UpdateServiceResp   *ecs.UpdateServiceOutput
-		Expected            *ecs.TaskDefinition
-	}{
-		{
-			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-				TaskDefinition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-						Command: commands,
-						Image:   &image,
-					}},
-					Family:            &fam,
-					TaskDefinitionArn: aws.String("task-definitionarn"),
-				},
-			},
-			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
-				TaskDefinition: &ecs.TaskDefinition{
-					Cpu:              &emptyValue,
-					Family:           &fam,
-					Memory:           &emptyValue,
-					Volumes:          []*ecs.Volume{},
-					NetworkMode:      &emptyValue,
-					ExecutionRoleArn: &emptyValue,
-					TaskRoleArn:      &emptyValue,
-					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-						Command: commands,
-						Image:   &image,
-					}},
-					RequiresCompatibilities: []*string{&emptyValue},
-				},
-			},
-			UpdateServiceResp: &ecs.UpdateServiceOutput{
-				Service: &ecs.Service{},
-			},
-			Expected: &ecs.TaskDefinition{
-				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-					Command: commands,
-					Image:   &newImage,
-				}},
-				Family: &fam,
-			},
-		},
-	}
-
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedDeploy{
-				DescribeTaskDefResp: c.DescribeTaskDefResp,
-				RegisterTaskDefResp: c.RegisterTaskDefResp,
-				UpdateServiceResp:   c.UpdateServiceResp,
-			},
-			ECR: mockedECRClient{},
-		}
-
-		newTaskDef, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-		if err != nil {
-			t.Fatalf("%d, unexpected error", err)
-		}
-
-		if a, e := *newTaskDef.Family, *c.Expected.Family; a != e {
-			t.Errorf("%d, expected %v family, got %v", i, e, a)
-		}
-
-		if a, e := *newTaskDef.ContainerDefinitions[0].Image, *c.Expected.ContainerDefinitions[0].Image; a != e {
-			t.Errorf("%d, expected %v image, got %v", i, e, a)
-		}
-
-		actualContainerCommand := strings.Join(aws.StringValueSlice(newTaskDef.ContainerDefinitions[0].Command), " ")
-		expectedContainerCommand := strings.Join(aws.StringValueSlice(c.Expected.ContainerDefinitions[0].Command), " ")
-
-		if a, e := actualContainerCommand, expectedContainerCommand; a != e {
-			t.Errorf("%d, expected %v command, got %v", i, e, a)
-		}
-	}
-}
-
-func TestUFODeployError(t *testing.T) {
-	fam := "family1"
-	command := "echo"
-	commands := []*string{&command, &command}
-	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-	commit := "8c018c8"
-
-	cases := []struct {
-		DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
-		UpdateServiceResp    *ecs.UpdateServiceOutput
-		RegisterTaskDefError error
-		UpdateServiceError   error
-		Expected             error
-	}{
-		{
-			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-				TaskDefinition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-						Command: commands,
-						Image:   &image,
-					}},
-					Family:            &fam,
-					TaskDefinitionArn: aws.String("task-definitionarn"),
-				},
-			},
-			RegisterTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected:             ErrCouldNotRegisterTaskDefinition,
-		},
-	}
-
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedDeploy{
-				DescribeTaskDefResp:  c.DescribeTaskDefResp,
-				RegisterTaskDefResp:  nil,
-				RegisterTaskDefError: c.RegisterTaskDefError,
-			},
-			ECR: mockedECRClient{},
-		}
-
-		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
-		}
-	}
-}
-
-func TestUFODeployError2(t *testing.T) {
-	fam := "family1"
-	command := "echo"
-	emptyValue := ""
-	commands := []*string{&command, &command}
-	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-	commit := "8c018c8"
-
-	cases := []struct {
-		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
-		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
-		UpdateServiceError  error
-		Expected            error
-	}{
-		{
-			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-				TaskDefinition: &ecs.TaskDefinition{
-					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-						Command: commands,
-						Image:   &image,
-					}},
-					Family:            &fam,
-					TaskDefinitionArn: aws.String("task-definitionarn"),
-				},
-			},
-			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
-				TaskDefinition: &ecs.TaskDefinition{
-					Cpu:              &emptyValue,
-					Family:           &fam,
-					Memory:           &emptyValue,
-					Volumes:          []*ecs.Volume{},
-					NetworkMode:      &emptyValue,
-					ExecutionRoleArn: &emptyValue,
-					TaskRoleArn:      &emptyValue,
-					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-						Command: commands,
-						Image:   &image,
-					}},
-					RequiresCompatibilities: []*string{&emptyValue},
-				},
-			},
-			UpdateServiceError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected:           ErrCouldNotUpdateService,
-		},
-	}
-
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedDeploy{
-				DescribeTaskDefResp: c.DescribeTaskDefResp,
-				RegisterTaskDefResp: c.RegisterTaskDefResp,
-				UpdateServiceError:  c.UpdateServiceError,
-			},
-			ECR: mockedECRClient{},
-		}
-
-		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
-		}
-	}
-}
-
-func TestUFODeployError3(t *testing.T) {
-	commit := "8c018c8"
-
-	cases := []struct {
-		DescribeTaskDefError error
-		Expected             error
-	}{
-		{
-			DescribeTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			Expected:             ErrCouldNotRetrieveTaskDefinition,
-		},
-	}
-
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedDeploy{
-				DescribeTaskDefError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			},
-			ECR: mockedECRClient{},
-		}
-
-		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
-		}
-	}
-}
-
-func TestUFOIsServiceRunning(t *testing.T) {
-	cases := []struct {
-		ListTasksResp      *ecs.ListTasksOutput
-		ListTasksError     error
-		DescribeTasksResp  *ecs.DescribeTasksOutput
-		DescribeTasksError error
-		DesiredCount       *int64
-		Expected           bool
-	}{
-		{
-			ListTasksResp: &ecs.ListTasksOutput{
-				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-			},
-			DescribeTasksResp: &ecs.DescribeTasksOutput{
-				Tasks: []*ecs.Task{&ecs.Task{
-					LastStatus:        aws.String("RUNNING"),
-					TaskDefinitionArn: aws.String("taskdefarn"),
-				}},
-			},
-			DesiredCount: aws.Int64(2),
-			Expected:     true,
-		},
-		{
-			ListTasksResp: &ecs.ListTasksOutput{
-				TaskArns: aws.StringSlice([]string{}),
-			},
-			DesiredCount: aws.Int64(2),
-			Expected:     false,
-		},
-		{
-			ListTasksResp: &ecs.ListTasksOutput{
-				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-			},
-			DescribeTasksResp: &ecs.DescribeTasksOutput{
-				Tasks: []*ecs.Task{&ecs.Task{
-					LastStatus:        aws.String("PENDING"),
-					TaskDefinitionArn: aws.String("taskdefarn"),
-				}},
-			},
-			DesiredCount: aws.Int64(2),
-			Expected:     false,
-		},
-		{
-			ListTasksResp: &ecs.ListTasksOutput{
-				TaskArns: aws.StringSlice([]string{}),
-			},
-			DescribeTasksResp: &ecs.DescribeTasksOutput{
-				Tasks: []*ecs.Task{&ecs.Task{}},
-			},
-			DesiredCount: aws.Int64(0),
-			Expected:     false,
-		},
-	}
-
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedIsServiceRunning{
-				ListTasksResp:      c.ListTasksResp,
-				DescribeTasksResp:  c.DescribeTasksResp,
-				ListTasksError:     c.ListTasksError,
-				DescribeTasksError: c.DescribeTasksError,
-			},
-			ECR: mockedECRClient{},
-		}
-
-		running, _ := ufo.IsServiceRunning(
-			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
-			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
-			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
-
-		if a, e := running, c.Expected; a != e {
+		if a, e := err, c.Expected; a.Error() != e.Error() {
 			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
 }
 
-func TestUFOIsServiceRunningError(t *testing.T) {
-	cases := []struct {
-		ListTasksResp      *ecs.ListTasksOutput
-		ListTasksError     error
-		DescribeTasksResp  *ecs.DescribeTasksOutput
-		DescribeTasksError error
-		DesiredCount       *int64
-		Expected           error
-	}{
-		{
-			ListTasksError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			DescribeTasksResp: &ecs.DescribeTasksOutput{
-				Tasks: []*ecs.Task{&ecs.Task{
-					LastStatus:        aws.String("RUNNING"),
-					TaskDefinitionArn: aws.String("taskdefarn"),
-				}},
-			},
-			DesiredCount: aws.Int64(1),
-			Expected:     ErrFailedToListRunningTasks,
-		},
-		{
-			ListTasksResp: &ecs.ListTasksOutput{
-				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-			},
-			DescribeTasksError: awserr.New("0", "ERROR", fmt.Errorf("error")),
-			DesiredCount:       aws.Int64(1),
-			Expected:           ErrCouldNotRetrieveTasks,
-		},
-	}
+// func TestUFODeploy(t *testing.T) {
+// 	emptyValue := ""
+// 	fam := "family1"
+// 	command := "echo"
+// 	commands := []*string{&command, &command}
+// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
+// 	commit := "8c018c8"
+// 	newImage := fmt.Sprintf("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:%s", commit)
 
-	for i, c := range cases {
-		ufo := UFO{
-			l:     &logger{},
-			State: &State{},
-			ECS: mockedIsServiceRunning{
-				ListTasksResp:      c.ListTasksResp,
-				DescribeTasksResp:  c.DescribeTasksResp,
-				ListTasksError:     c.ListTasksError,
-				DescribeTasksError: c.DescribeTasksError,
-			},
-			ECR: mockedECRClient{},
-		}
+// 	cases := []struct {
+// 		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
+// 		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
+// 		UpdateServiceResp   *ecs.UpdateServiceOutput
+// 		Expected            *ecs.TaskDefinition
+// 	}{
+// 		{
+// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
+// 				TaskDefinition: &ecs.TaskDefinition{
+// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 						Command: commands,
+// 						Image:   &image,
+// 					}},
+// 					Family:            &fam,
+// 					TaskDefinitionArn: aws.String("task-definitionarn"),
+// 				},
+// 			},
+// 			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
+// 				TaskDefinition: &ecs.TaskDefinition{
+// 					Cpu:              &emptyValue,
+// 					Family:           &fam,
+// 					Memory:           &emptyValue,
+// 					Volumes:          []*ecs.Volume{},
+// 					NetworkMode:      &emptyValue,
+// 					ExecutionRoleArn: &emptyValue,
+// 					TaskRoleArn:      &emptyValue,
+// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 						Command: commands,
+// 						Image:   &image,
+// 					}},
+// 					RequiresCompatibilities: []*string{&emptyValue},
+// 				},
+// 			},
+// 			UpdateServiceResp: &ecs.UpdateServiceOutput{
+// 				Service: &ecs.Service{},
+// 			},
+// 			Expected: &ecs.TaskDefinition{
+// 				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 					Command: commands,
+// 					Image:   &newImage,
+// 				}},
+// 				Family: &fam,
+// 			},
+// 		},
+// 	}
 
-		_, err := ufo.IsServiceRunning(
-			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
-			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
-			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedDeploy{
+// 				DescribeTaskDefResp: c.DescribeTaskDefResp,
+// 				RegisterTaskDefResp: c.RegisterTaskDefResp,
+// 				UpdateServiceResp:   c.UpdateServiceResp,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
 
-		if a, e := err, c.Expected; a != e {
-			t.Errorf("%d, expected %v error, got %v", i, e, a)
-		}
-	}
-}
+// 		newTaskDef, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+// 		if err != nil {
+// 			t.Fatalf("%d, unexpected error", err)
+// 		}
+
+// 		if a, e := *newTaskDef.Family, *c.Expected.Family; a != e {
+// 			t.Errorf("%d, expected %v family, got %v", i, e, a)
+// 		}
+
+// 		if a, e := *newTaskDef.ContainerDefinitions[0].Image, *c.Expected.ContainerDefinitions[0].Image; a != e {
+// 			t.Errorf("%d, expected %v image, got %v", i, e, a)
+// 		}
+
+// 		actualContainerCommand := strings.Join(aws.StringValueSlice(newTaskDef.ContainerDefinitions[0].Command), " ")
+// 		expectedContainerCommand := strings.Join(aws.StringValueSlice(c.Expected.ContainerDefinitions[0].Command), " ")
+
+// 		if a, e := actualContainerCommand, expectedContainerCommand; a != e {
+// 			t.Errorf("%d, expected %v command, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFODeployError(t *testing.T) {
+// 	fam := "family1"
+// 	command := "echo"
+// 	commands := []*string{&command, &command}
+// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
+// 	commit := "8c018c8"
+
+// 	cases := []struct {
+// 		DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
+// 		UpdateServiceResp    *ecs.UpdateServiceOutput
+// 		RegisterTaskDefError error
+// 		UpdateServiceError   error
+// 		Expected             error
+// 	}{
+// 		{
+// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
+// 				TaskDefinition: &ecs.TaskDefinition{
+// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 						Command: commands,
+// 						Image:   &image,
+// 					}},
+// 					Family:            &fam,
+// 					TaskDefinitionArn: aws.String("task-definitionarn"),
+// 				},
+// 			},
+// 			RegisterTaskDefError: errors.New("test-error"),
+// 			Expected:             errors.Wrap(errors.New("test-error"), errCouldNotRegisterTaskDefinition),
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedDeploy{
+// 				DescribeTaskDefResp:  c.DescribeTaskDefResp,
+// 				RegisterTaskDefResp:  nil,
+// 				RegisterTaskDefError: c.RegisterTaskDefError,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+// 		if a, e := err, c.Expected; a.Error() != e.Error() {
+// 			t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFODeployError2(t *testing.T) {
+// 	fam := "family1"
+// 	command := "echo"
+// 	emptyValue := ""
+// 	commands := []*string{&command, &command}
+// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
+// 	commit := "8c018c8"
+
+// 	cases := []struct {
+// 		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
+// 		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
+// 		UpdateServiceError  error
+// 		Expected            error
+// 	}{
+// 		{
+// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
+// 				TaskDefinition: &ecs.TaskDefinition{
+// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 						Command: commands,
+// 						Image:   &image,
+// 					}},
+// 					Family:            &fam,
+// 					TaskDefinitionArn: aws.String("task-definitionarn"),
+// 				},
+// 			},
+// 			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
+// 				TaskDefinition: &ecs.TaskDefinition{
+// 					Cpu:              &emptyValue,
+// 					Family:           &fam,
+// 					Memory:           &emptyValue,
+// 					Volumes:          []*ecs.Volume{},
+// 					NetworkMode:      &emptyValue,
+// 					ExecutionRoleArn: &emptyValue,
+// 					TaskRoleArn:      &emptyValue,
+// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
+// 						Command: commands,
+// 						Image:   &image,
+// 					}},
+// 					RequiresCompatibilities: []*string{&emptyValue},
+// 				},
+// 			},
+// 			UpdateServiceError: errors.New("test-error"),
+// 			Expected:           errors.Wrap(errors.New("test-error"), errCouldNotUpdateService),
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedDeploy{
+// 				DescribeTaskDefResp: c.DescribeTaskDefResp,
+// 				RegisterTaskDefResp: c.RegisterTaskDefResp,
+// 				UpdateServiceError:  c.UpdateServiceError,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+// 		if a, e := err, c.Expected; a.Error() != e.Error() {
+// 			t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFODeployError3(t *testing.T) {
+// 	commit := "8c018c8"
+
+// 	cases := []struct {
+// 		DescribeTaskDefError error
+// 		Expected             error
+// 	}{
+// 		{
+// 			DescribeTaskDefError: errors.New("test-error"),
+// 			Expected:             errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTaskDefinition),
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedDeploy{
+// 				DescribeTaskDefError: errors.New("test-error"),
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		_, err := ufo.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+
+// 		if a, e := err, c.Expected; a.Error() != e.Error() {
+// 			t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFOIsServiceRunning(t *testing.T) {
+// 	cases := []struct {
+// 		ListTasksResp      *ecs.ListTasksOutput
+// 		ListTasksError     error
+// 		DescribeTasksResp  *ecs.DescribeTasksOutput
+// 		DescribeTasksError error
+// 		DesiredCount       *int64
+// 		Expected           *ServiceStatus
+// 	}{
+// 		{
+// 			ListTasksResp: &ecs.ListTasksOutput{
+// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+// 			},
+// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
+// 				Tasks: []*ecs.Task{&ecs.Task{
+// 					LastStatus:        aws.String("RUNNING"),
+// 					TaskDefinitionArn: aws.String("taskdefarn"),
+// 				}},
+// 			},
+// 			DesiredCount: aws.Int64(2),
+// 			Expected: &ServiceStatus{
+// 				arn:     "taskdefarn",
+// 				running: true,
+// 			},
+// 		},
+// 		{
+// 			ListTasksResp: &ecs.ListTasksOutput{
+// 				TaskArns: aws.StringSlice([]string{}),
+// 			},
+// 			DesiredCount: aws.Int64(2),
+// 			Expected: &ServiceStatus{
+// 				arn:     "",
+// 				running: false,
+// 			},
+// 		},
+// 		{
+// 			ListTasksResp: &ecs.ListTasksOutput{
+// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+// 			},
+// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
+// 				Tasks: []*ecs.Task{&ecs.Task{
+// 					LastStatus:        aws.String("PENDING"),
+// 					TaskDefinitionArn: aws.String("taskdefarn"),
+// 				}},
+// 			},
+// 			DesiredCount: aws.Int64(2),
+// 			Expected: &ServiceStatus{
+// 				arn:     "taskdefarn",
+// 				running: false,
+// 			},
+// 		},
+// 		{
+// 			ListTasksResp: &ecs.ListTasksOutput{
+// 				TaskArns: aws.StringSlice([]string{}),
+// 			},
+// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
+// 				Tasks: []*ecs.Task{&ecs.Task{}},
+// 			},
+// 			DesiredCount: aws.Int64(0),
+// 			Expected: &ServiceStatus{
+// 				arn:     "",
+// 				running: false,
+// 			},
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedIsServiceRunning{
+// 				ListTasksResp:      c.ListTasksResp,
+// 				DescribeTasksResp:  c.DescribeTasksResp,
+// 				ListTasksError:     c.ListTasksError,
+// 				DescribeTasksError: c.DescribeTasksError,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		status, _ := ufo.IsServiceRunning(
+// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
+// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
+// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
+
+// 		if a, e := status, c.Expected; a.running != e.running {
+// 			t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFOIsServiceRunningError(t *testing.T) {
+// 	cases := []struct {
+// 		ListTasksResp      *ecs.ListTasksOutput
+// 		ListTasksError     error
+// 		DescribeTasksResp  *ecs.DescribeTasksOutput
+// 		DescribeTasksError error
+// 		DesiredCount       *int64
+// 		Expected           error
+// 	}{
+// 		{
+// 			ListTasksError: errors.New("test-error"),
+// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
+// 				Tasks: []*ecs.Task{&ecs.Task{
+// 					LastStatus:        aws.String("RUNNING"),
+// 					TaskDefinitionArn: aws.String("taskdefarn"),
+// 				}},
+// 			},
+// 			DesiredCount: aws.Int64(1),
+// 			Expected:     errors.Wrap(errors.New("test-error"), errFailedToListRunningTasks),
+// 		},
+// 		{
+// 			ListTasksResp: &ecs.ListTasksOutput{
+// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
+// 			},
+// 			DescribeTasksError: errors.New("test-error"),
+// 			DesiredCount:       aws.Int64(1),
+// 			Expected:           errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTasks),
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			ECS: mockedIsServiceRunning{
+// 				ListTasksResp:      c.ListTasksResp,
+// 				DescribeTasksResp:  c.DescribeTasksResp,
+// 				ListTasksError:     c.ListTasksError,
+// 				DescribeTasksError: c.DescribeTasksError,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		_, err := ufo.IsServiceRunning(
+// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
+// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
+// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
+
+// 		if a, e := err, c.Expected; a.Error() != e.Error() {
+// 			t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		}
+// 	}
+// }
+
+// func TestUFOAwaitDeploymentCompletion(t *testing.T) {
+// 	cases := []struct {
+// 		ExpectedDoneCh     chan bool
+// 		ExpectedErrCh      chan error
+// 		ListTasksResp      *ecs.ListTasksOutput
+// 		ListTasksError     error
+// 		DescribeTasksResp  *ecs.DescribeTasksOutput
+// 		DescribeTasksError error
+// 		DesiredCount       *int64
+// 	}{
+// 		{
+// 			ExpectedDoneCh: make(chan bool),
+// 			ExpectedErrCh:  make(chan error),
+// 			ListTasksError: errors.New("test-error"),
+// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
+// 				Tasks: []*ecs.Task{&ecs.Task{
+// 					LastStatus:        aws.String("RUNNING"),
+// 					TaskDefinitionArn: aws.String("taskdefarn"),
+// 				}},
+// 			},
+// 			DesiredCount: aws.Int64(1),
+// 		},
+// 	}
+
+// 	for i, c := range cases {
+// 		ufo := UFO{
+// 			,
+// 			ECS: mockedIsServiceRunning{
+// 				ListTasksResp:      c.ListTasksResp,
+// 				DescribeTasksResp:  c.DescribeTasksResp,
+// 				ListTasksError:     c.ListTasksError,
+// 				DescribeTasksError: c.DescribeTasksError,
+// 			},
+// 			ECR: mockedECRClient{},
+// 		}
+
+// 		doneCh, errCh := ufo.AwaitDeploymentCompletion(
+// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
+// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
+// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
+
+// 		// if doneCh, errCh := running, c.Expected; a != e {
+// 		// 	t.Errorf("%d, expected %v, got %v", i, e, a)
+// 		// }
+
+// 		t.Errorf("%d, expected %v, got %v", i, <-doneCh, errCh)
+// 	}
+// }

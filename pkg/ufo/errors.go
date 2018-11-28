@@ -1,27 +1,27 @@
 package ufo
 
-import "errors"
-
 var (
-	ErrFailedToListClusters     = errors.New("Failed to list clusters")
-	ErrFailedToListServices     = errors.New("Failed to list services")
-	ErrFailedToListRunningTasks = errors.New("Failed to list running tasks")
+	errFailedToListClusters     = "error listing clusters"
+	errFailedToListServices     = "error listing services"
+	errFailedToListRunningTasks = "error listing running tasks"
 
-	ErrCouldNotRetrieveCluster        = errors.New("Could not retrieve cluster")
-	ErrCouldNotRetrieveService        = errors.New("Could not retrieve service")
-	ErrCouldNotRetrieveTaskDefinition = errors.New("Could not retrieve task definition")
-	ErrCouldNotRetrieveTasks          = errors.New("Could not retrieve tasks")
-	ErrCouldNotRetrieveImages         = errors.New("Could not retrieve images")
+	errCouldNotRetrieveCluster        = "could not retrieve cluster"
+	errCouldNotRetrieveService        = "could not retrieve service"
+	errCouldNotRetrieveTaskDefinition = "could not retrieve task definition"
+	errCouldNotRetrieveTasks          = "could not retrieve tasks"
+	errCouldNotRetrieveImages         = "could not retrieve images"
 
-	ErrInvalidTaskDefinition = errors.New("Invalid task definition for operation")
+	errInvalidTaskDefinition = "task definition contains no container definitions"
 
-	ErrCouldNotRegisterTaskDefinition = errors.New("Could not register new task definition")
-	ErrCouldNotUpdateService          = errors.New("Could not update service")
+	errCouldNotRegisterTaskDefinition = "could not register new task definition"
+	errCouldNotUpdateService          = "could not update service"
 
-	ErrClusterNotFound = errors.New("Cluster was not found")
-	ErrServiceNotFound = errors.New("Service was not found")
+	errClusterNotFound = "cluster was not found"
+	errServiceNotFound = "service was not found"
 
-	ErrCouldNotRunTask = errors.New("Desired task could not be run")
+	errCouldNotRunTask = "desired task could not run"
 
-	ErrCouldNotGetLogs = errors.New("Could not get cloudwatch logs")
+	errCouldNotGetLogs = "could not get cloudwatch logs"
+
+	errECRLogin = "Could not login to ECR"
 )

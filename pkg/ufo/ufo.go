@@ -2,13 +2,14 @@ package ufo
 
 import (
 	"fmt"
+	"os/exec"
 	"regexp"
-	"runtime"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/request"
+
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
 	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
@@ -16,108 +17,51 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecr/ecriface"
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
+	"github.com/pkg/errors"
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
 )
 
-type Logger interface {
-	Printf(string, ...interface{})
-}
-
-type logger struct{}
-
-type Config struct {
-	Profile *string
-	Region  *string
-}
-
-type State struct {
-	Cluster        *ecs.Cluster
-	Service        *ecs.Service
-	TaskDefinition *ecs.TaskDefinition
+type AwsConfig struct {
+	Profile string
+	Region  string
 }
 
 type UFO struct {
-	l     Logger
-	State *State
-	ECS   ecsiface.ECSAPI
-	ECR   ecriface.ECRAPI
-	CWL   cloudwatchlogsiface.CloudWatchLogsAPI
-}
-
-// Fly is an alias for CreateUFO
-func Fly(c Config) *UFO {
-	return New(c)
+	Config *AwsConfig
+	ECS    ecsiface.ECSAPI
+	ECR    ecriface.ECRAPI
+	CWL    cloudwatchlogsiface.CloudWatchLogsAPI
 }
 
 // New creates a UFO session and connects to AWS to create a session
-func New(c Config) *UFO {
+func New(awsConfig *AwsConfig) *UFO {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		Config:  aws.Config{Region: c.Region},
-		Profile: *c.Profile,
+		Config:  aws.Config{Region: aws.String(awsConfig.Region)},
+		Profile: awsConfig.Profile,
 	}))
 
 	app := &UFO{
-		l:     &logger{},
-		ECS:   ecs.New(sess),
-		ECR:   ecr.New(sess),
-		CWL:   cloudwatchlogs.New(sess),
-		State: &State{},
+		Config: awsConfig,
+		ECS:    ecs.New(sess),
+		ECR:    ecr.New(sess),
+		CWL:    cloudwatchlogs.New(sess),
 	}
 
 	return app
 }
 
-func (l *logger) Printf(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
-}
-
-// UseCluster sets a cluster choice in UFO state
-// @todo this may be extraneous but if we decide to leave it in, we should have funcs optionally require
-//		the cluster/service/taskDef and if not passed, can use the ones stored in state.
-func (u *UFO) UseCluster(c *ecs.Cluster) {
-	u.State.Cluster = c
-}
-
-// UseService sets a service choice in UFO state
-func (u *UFO) UseService(s *ecs.Service) {
-	u.State.Service = s
-}
-
-// UseTaskDefinition sets a task definition choice in UFO state
-func (u *UFO) UseTaskDefinition(t *ecs.TaskDefinition) {
-	u.State.TaskDefinition = t
-}
-
-// Handle errors, nil or otherwise
-// This func is intended to always be called after an error is returned from an AWS method call in UFO
-func (u *UFO) logError(err error) {
-	switch err := err.(type) {
-	case awserr.Error:
-		if parsed, ok := err.(awserr.Error); ok {
-			pc := make([]uintptr, 15)
-			n := runtime.Callers(2, pc)
-			frames := runtime.CallersFrames(pc[:n])
-			frame, _ := frames.Next()
-
-			u.l.Printf("Code: %s. %s\n %s,:%d %s\n", parsed.Code(), parsed.Error(), frame.File, frame.Line, frame.Function)
-		}
-	default:
-		u.l.Printf("error: %v", err)
-	}
-}
-
-// Clusters returns all ECS clusters in the account
+// Clusters returns all ECS clusters
 func (u *UFO) Clusters() ([]string, error) {
 	res, err := u.ECS.ListClusters(&ecs.ListClustersInput{})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrFailedToListClusters
+		return nil, errors.Wrap(err, errFailedToListClusters)
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
 	clusters := make([]string, len(res.ClusterArns))
 
+	// Amazon return ARNs which we then keep just the cluster name from
 	for i, cluster := range res.ClusterArns {
 		clusters[i] = r.FindString(*cluster)
 	}
@@ -132,9 +76,7 @@ func (u *UFO) Services(c *ecs.Cluster) ([]string, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrFailedToListServices
+		return nil, errors.Wrap(err, errFailedToListServices)
 	}
 
 	r := regexp.MustCompile(`([^\/]+)$`)
@@ -156,15 +98,13 @@ func (u *UFO) RunningTasks(c *ecs.Cluster, s *ecs.Service) ([]*string, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrFailedToListRunningTasks
+		return nil, errors.Wrap(err, errFailedToListRunningTasks)
 	}
 
 	return result.TaskArns, nil
 }
 
-// GetCluster returns a clusters detail with cluster name or ARN
+// GetCluster returns a clusters detail
 func (u *UFO) GetCluster(name string) (*ecs.Cluster, error) {
 	res, err := u.ECS.DescribeClusters(&ecs.DescribeClustersInput{
 		Clusters: []*string{
@@ -173,13 +113,11 @@ func (u *UFO) GetCluster(name string) (*ecs.Cluster, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRetrieveCluster
+		return nil, errors.Wrap(err, errCouldNotRetrieveCluster)
 	}
 
 	if len(res.Clusters) < 1 {
-		return nil, ErrClusterNotFound
+		return nil, errors.Wrap(err, errClusterNotFound)
 	}
 
 	return res.Clusters[0], nil
@@ -195,13 +133,11 @@ func (u *UFO) GetService(c *ecs.Cluster, service string) (*ecs.Service, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRetrieveService
+		return nil, errors.Wrap(err, errCouldNotRetrieveService)
 	}
 
 	if len(res.Services) < 1 {
-		return nil, ErrServiceNotFound
+		return nil, errors.Wrap(err, errServiceNotFound)
 	}
 
 	return res.Services[0], nil
@@ -215,9 +151,7 @@ func (u *UFO) GetTaskDefinition(c *ecs.Cluster, s *ecs.Service) (*ecs.TaskDefini
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRetrieveTaskDefinition
+		return nil, errors.Wrap(err, errCouldNotRetrieveTaskDefinition)
 	}
 
 	return result.TaskDefinition, nil
@@ -231,9 +165,7 @@ func (u *UFO) GetTasks(c *ecs.Cluster, tasks []*string) ([]*ecs.Task, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRetrieveTasks
+		return nil, errors.Wrap(err, errCouldNotRetrieveTasks)
 	}
 
 	return result.Tasks, nil
@@ -252,9 +184,7 @@ func (u *UFO) GetImages(t *ecs.TaskDefinition) ([]*ecr.ImageDetail, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRetrieveImages
+		return nil, errors.Wrap(err, errCouldNotRetrieveImages)
 	}
 
 	images := make([]*ecr.ImageDetail, 0)
@@ -275,13 +205,11 @@ func (u *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return "", ErrCouldNotRetrieveTaskDefinition
+		return "", errors.Wrap(err, errCouldNotRetrieveTaskDefinition)
 	}
 
 	if len(result.TaskDefinition.ContainerDefinitions) < 1 {
-		return "", ErrInvalidTaskDefinition
+		return "", errors.Wrap(err, errInvalidTaskDefinition)
 	}
 
 	repo := result.TaskDefinition.ContainerDefinitions[0].Image
@@ -291,18 +219,16 @@ func (u *UFO) GetLastDeployedCommit(taskDefinition string) (string, error) {
 	return r.FindStringSubmatch(*repo)[1], nil
 }
 
-// RegisterTaskDefinitionWithImage creates a new task definition with an image at a specific version
-// This copies an existing task definition and only updates the tag used for the image
-func (u *UFO) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
+// RegisterTaskDefinitionWithImage creates a new task definition with the provided tag
+// This copies an existing task definition and only changes the tag used for the image
+func (u *UFO) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, tag string) (*ecs.TaskDefinition, error) {
 	t, err := u.GetTaskDefinition(c, s)
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, err // @todo simplify return
+		return nil, err
 	}
 
-	newTaskDef := u.UpdateTaskDefinitionImage(*t, version)
+	newTaskDef := u.UpdateTaskDefinitionImage(*t, tag)
 
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via UpdateTaskDefinitionImage
@@ -318,9 +244,7 @@ func (u *UFO) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, ve
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRegisterTaskDefinition
+		return nil, errors.Wrap(err, errCouldNotRegisterTaskDefinition)
 	}
 
 	return result.TaskDefinition, nil
@@ -342,20 +266,19 @@ func (u *UFO) RegisterTaskDefinitionWithEnvVars(t *ecs.TaskDefinition) (*ecs.Tas
 	})
 
 	if err != nil {
-		u.logError(err)
-		return nil, ErrCouldNotRegisterTaskDefinition
+		return nil, errors.Wrap(err, errCouldNotRegisterTaskDefinition)
 	}
 
 	return result.TaskDefinition, nil
 }
 
 // UpdateTaskDefinitionImage copies a task definition and update its image tag
-func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, version string) ecs.TaskDefinition {
+func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, tag string) ecs.TaskDefinition {
 	r := regexp.MustCompile(`(\S+):`)
 	currentImage := *t.ContainerDefinitions[0].Image
 
 	repo := r.FindStringSubmatch(currentImage)[1]
-	newImage := fmt.Sprintf("%s:%s", repo, version)
+	newImage := fmt.Sprintf("%s:%s", repo, tag)
 
 	*t.ContainerDefinitions[0].Image = newImage
 
@@ -380,29 +303,24 @@ func (u *UFO) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinitio
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotUpdateService
+		return nil, errors.Wrap(err, errCouldNotUpdateService)
 	}
 
 	return result, nil
 }
 
-// Deploy a version to a service in a cluster
-func (u *UFO) Deploy(c *ecs.Cluster, s *ecs.Service, version string) (*ecs.TaskDefinition, error) {
-	t, err := u.RegisterTaskDefinitionWithImage(c, s, version)
+// UpdateServiceWithNewTaskDefinition registers a task definition with a tag and updates a service
+// with the newly registered task definition
+func (u *UFO) UpdateServiceWithNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, tag string) (*ecs.TaskDefinition, error) {
+	t, err := u.RegisterTaskDefinitionWithImage(c, s, tag)
 
 	if err != nil {
-		u.logError(err)
-
 		return nil, err
 	}
 
 	_, err = u.UpdateService(c, s, t)
 
 	if err != nil {
-		u.logError(err)
-
 		return nil, err
 	}
 
@@ -425,9 +343,7 @@ func (u *UFO) RunTask(c *ecs.Cluster, t *ecs.TaskDefinition, cmd string) (*ecs.R
 	})
 
 	if err != nil {
-		u.logError(err)
-
-		return nil, ErrCouldNotRunTask
+		return nil, errors.Wrap(err, errCouldNotRunTask)
 	}
 
 	return result, nil
@@ -435,36 +351,57 @@ func (u *UFO) RunTask(c *ecs.Cluster, t *ecs.TaskDefinition, cmd string) (*ecs.R
 
 // IsServiceRunning is meant to be called after a service update. This function checks if the newly
 // started task has the status "RUNNING"
-func (u *UFO) IsServiceRunning(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition) (bool, error) {
-	if *s.DesiredCount <= 0 {
-		return false, nil
+func (u *UFO) IsServiceRunning(detail *DeployDetail) bool {
+	if *detail.Service.DesiredCount <= 0 {
+		return false
 	}
 
-	runningTasks, err := u.RunningTasks(c, s)
+	runningTasks, err := u.RunningTasks(detail.Cluster, detail.Service)
 
 	if err != nil {
-		u.logError(err)
-		return false, err
+		return false
 	}
 
 	if len(runningTasks) <= 0 {
-		return false, nil
+		return false
 	}
 
-	tasks, err := u.GetTasks(c, runningTasks)
+	tasks, err := u.GetTasks(detail.Cluster, runningTasks)
 
 	if err != nil {
-		u.logError(err)
-		return false, err
+		return false
 	}
 
 	for _, task := range tasks {
-		if *task.TaskDefinitionArn == *t.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
-			return true, nil
+		if *task.TaskDefinitionArn == *detail.TaskDefinition.TaskDefinitionArn && *task.LastStatus == "RUNNING" {
+			return true
 		}
 	}
 
-	return false, nil
+	return false
+}
+
+func (u *UFO) IsTaskRunning(cluster *string, task *string) error {
+	err := u.ECS.WaitUntilTasksStoppedWithContext(aws.BackgroundContext(), &ecs.DescribeTasksInput{
+		Cluster: cluster,
+		Tasks:   []*string{task},
+	}, func(w *request.Waiter) {
+		w.Delay = request.ConstantWaiterDelay(time.Second * 2)
+	})
+
+	return err
+}
+
+// ECRLogin uses an AWS region & profile to login to ECR
+func (u *UFO) ECRLogin() error {
+	cmd := fmt.Sprintf("$(aws ecr get-login --no-include-email --region %s --profile %s)", u.Config.Region, u.Config.Profile)
+	getLogin := exec.Command("bash", "-c", cmd)
+
+	if err := term.PrintStdout(getLogin); err != nil {
+		return errors.Wrap(err, errECRLogin)
+	}
+
+	return nil
 }
 
 type GetLogsInput struct {
@@ -476,7 +413,7 @@ type GetLogsInput struct {
 }
 
 type LogLine struct {
-	EventId       string
+	EventID       string
 	LogStreamName string
 	Message       string
 	Timestamp     time.Time
@@ -512,7 +449,7 @@ func (u *UFO) GetLogs(i *GetLogsInput) ([]LogLine, error) {
 			for _, event := range resp.Events {
 				logLines = append(logLines,
 					LogLine{
-						EventId:       aws.StringValue(event.EventId),
+						EventID:       aws.StringValue(event.EventId),
 						Message:       aws.StringValue(event.Message),
 						LogStreamName: aws.StringValue(event.LogStreamName),
 						Timestamp:     time.Unix(0, aws.Int64Value(event.Timestamp)*int64(time.Millisecond)),
@@ -525,7 +462,7 @@ func (u *UFO) GetLogs(i *GetLogsInput) ([]LogLine, error) {
 	)
 
 	if err != nil {
-		return nil, ErrCouldNotGetLogs
+		return nil, errors.Wrap(err, errCouldNotGetLogs)
 	}
 
 	return logLines, nil
