@@ -5,8 +5,8 @@ import (
 	"strings"
 )
 
-// GetHead returns the HEAD of a git repo
-func GetHead() (string, error) {
+// GetCommit returns the commit hash from HEAD of a git repo
+func GetCommit() (string, error) {
 	cmd := exec.Command("git", "rev-parse", "--short", "HEAD")
 
 	r, err := cmd.Output()
