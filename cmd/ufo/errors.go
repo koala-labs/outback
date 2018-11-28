@@ -17,15 +17,6 @@ var (
 // Deploy Errors
 var (
 	ErrDeployTimeout = errors.New("Timed out waiting for task to start")
-	ErrDockerBuild   = errors.New("Could not build docker image")
-	ErrDockerPush    = errors.New("Could not push docker image. Are you logged in to ECR? http://docs.aws.amazon.com/AmazonECR/latest/userguide/Registries.html#registry_auth\nHint: `$(aws ecr get-login --no-include-email --region us-west-1)`\nDon't forget your --profile if you use one")
-	ErrECRLogin      = errors.New("Could not login to ECR")
-)
-
-// Version errors
-var (
-	ErrCouldNotAssertVersion = errors.New("could not assert that UFO is up to date")
-	ErrUFOOutOfDate          = errors.New("UFO is out of date, please update to continue")
 )
 
 // Init errors
