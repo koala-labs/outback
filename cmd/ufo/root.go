@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	cfg    *Config
-	ufoCfg UFO.Config
+	cfg       *Config
+	awsConfig *UFO.AwsConfig
 )
 
 // Flags
@@ -64,13 +64,13 @@ func loadConfig() {
 		handleError(err)
 
 		if err := viper.Unmarshal(&cfg); err != nil {
-			fmt.Printf("Unable to decode config, %v", err)
+			fmt.Printf("Unable to unmarshal config, %v", err)
 			os.Exit(1)
 		}
 	}
 
-	ufoCfg = UFO.Config{
-		Region:  &cfg.Region,
-		Profile: &cfg.Profile,
+	awsConfig = &UFO.AwsConfig{
+		Profile: cfg.Profile,
+		Region:  cfg.Region,
 	}
 }
