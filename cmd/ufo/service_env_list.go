@@ -24,7 +24,7 @@ func listEnv(cmd *cobra.Command, args []string) {
 
 	handleError(err)
 
-	ufo := UFO.New(ufoCfg)
+	ufo := UFO.New(awsConfig)
 
 	c, err := ufo.GetCluster(cfgCluster.Name)
 

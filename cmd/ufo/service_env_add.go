@@ -23,7 +23,7 @@ var serviceAddEnvCmd = &cobra.Command{
 }
 
 func addEnvVar(cmd *cobra.Command, args []string) error {
-	u := UFO.New(ufoCfg)
+	u := UFO.New(awsConfig)
 
 	c, err := u.GetCluster(flagCluster)
 

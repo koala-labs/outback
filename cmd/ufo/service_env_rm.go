@@ -22,7 +22,7 @@ var serviceRmEnvCmd = &cobra.Command{
 }
 
 func rmEnv(cmd *cobra.Command, args []string) error {
-	u := UFO.New(ufoCfg)
+	u := UFO.New(awsConfig)
 
 	c, err := u.GetCluster(flagCluster)
 
