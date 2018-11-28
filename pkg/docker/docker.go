@@ -1,0 +1,35 @@
+package docker
+
+import (
+	"fmt"
+	"os/exec"
+
+	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
+)
+
+// ImageBuild builds a docker image based on the configured dockerfile for
+// the cluster you are deploying to and tags the image with the vcs head
+func ImageBuild(repo string, tag string, dockerfile string) error {
+	image := fmt.Sprintf("%s:%s", repo, tag)
+
+	cmd := exec.Command("docker", "build", "-f", dockerfile, "-t", image, ".")
+
+	if err := term.PrintStdout(cmd); err != nil {
+		return ErrImageBuild
+	}
+
+	return nil
+}
+
+// ImagePush pushes the image built from buildImage to the configured repository
+func ImagePush(repo string, tag string) error {
+	image := fmt.Sprintf("%s:%s", repo, tag)
+
+	cmd := exec.Command("docker", "push", image)
+
+	if err := term.PrintStdout(cmd); err != nil {
+		return ErrImagePush
+	}
+
+	return nil
+}
