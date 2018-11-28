@@ -8,7 +8,6 @@ import (
 
 // Config Errors
 var (
-	ErrNoEnvironments  = errors.New("No environments configured")
 	ErrClusterNotFound = errors.New("Selected cluster could not be found. Please check your config")
 	ErrServiceNotFound = errors.New("Selected service could not be found. Please check your config")
 	ErrCommandNotFound = errors.New("Selected command could not be found. Please check your config")
@@ -21,10 +20,6 @@ var (
 
 // Init errors
 var (
-	ErrNoGitIgnore             = errors.New("No .gitignore exists")
-	ErrNoWorkingDirectory      = errors.New("Could not resolve current working directory")
-	ErrCouldNotLoadConfig      = errors.New("Could not load config file, please make sure it is valid JSON")
-	ErrCouldNotOpenGitIgnore   = errors.New("Could not open .gitignore. Is there a .gitignore in the current directory?")
 	ErrCouldNotCreateConfig    = errors.New("Could not create config file")
 	ErrConfigFileAlreadyExists = errors.New("Config file already exists at the chosen location")
 )
