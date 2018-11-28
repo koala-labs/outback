@@ -1,8 +1,6 @@
 package main
 
-import (
-	"gitlab.fuzzhq.com/Web-Ops/ufo/cmd/ufo"
-)
+import cmd "gitlab.fuzzhq.com/Web-Ops/ufo/cmd/ufo"
 
 func main() {
 	cmd.Execute()
