@@ -1,8 +1,6 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	survey "gopkg.in/AlecAivazis/survey.v1"
@@ -31,7 +29,6 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 
 	err := survey.Ask(configQuestion, &configAnswer)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
@@ -47,13 +44,6 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 				Options: cfg.getClusters(),
 			},
 		},
-		{
-			Name: "login",
-			Prompt: &survey.Select{
-				Message: "Login to ECR?",
-				Options: []string{"no", "yes"},
-			},
-		},
 	}
 
 	clusterAnswer := struct {
@@ -63,7 +53,6 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 
 	err = survey.Ask(clusterQuestion, &clusterAnswer)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
@@ -71,7 +60,7 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 		{
 			Name: "confirm",
 			Prompt: &survey.Select{
-				Message: fmt.Sprintf("Are you sure you want to deploy services %v?", cfg.getServices(clusterAnswer.Cluster)),
+				Message: "Are you sure you want to deploy?",
 				Options: []string{"no", "yes"},
 			},
 		},
@@ -83,11 +72,14 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 
 	err = survey.Ask(confirmQuestion, &confirmAnswer)
 	if err != nil {
-		fmt.Println(err.Error())
 		return err
 	}
 
-	return fullDeploy(clusterAnswer.Cluster, toBool(clusterAnswer.Login))
+	if toBool(confirmAnswer.Confirm) {
+		return deploy(clusterAnswer.Cluster)
+	}
+
+	return nil
 }
 
 func toBool(answer string) bool {
