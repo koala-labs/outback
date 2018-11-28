@@ -96,7 +96,7 @@ func deploy(clusterName string) error {
 		case detail := <-doneCh:
 			fmt.Printf("Service %s (%s) is now running \n", *detail.Service.ServiceName, detail.TaskDefinitionFamily())
 		case <-time.After(time.Minute * 5):
-			fmt.Printf("Timed out waiting for deployment")
+			return ErrDeployTimeout
 		}
 	}
 
