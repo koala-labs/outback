@@ -102,7 +102,7 @@ func (o *LogsOperation) AddEndTime(rawEndTime string) {
 
 func (o *LogsOperation) AddTasks(tasks []string) {
 	for _, task := range tasks {
-		logStreamName := fmt.Sprintf(logStreamNameFormat, o.Service, o.Namespace, task)
+		logStreamName := fmt.Sprintf(logStreamNameFormat, o.Namespace, o.Service, task)
 		o.LogStreamNames = append(o.LogStreamNames, logStreamName)
 	}
 }
