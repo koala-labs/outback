@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/docker"
+	"github.com/fuzz-productions/ufo/pkg/docker"
 )
 
 type Deployment struct {

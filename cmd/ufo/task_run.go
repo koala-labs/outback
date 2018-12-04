@@ -5,7 +5,7 @@ import (
 	"regexp"
 
 	"github.com/spf13/cobra"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
 )
 
 var (

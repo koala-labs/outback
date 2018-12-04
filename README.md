@@ -16,7 +16,7 @@
 
 ## Installing UFO
 
-1. Install the UFO binary `go get -u gitlab.fuzzhq.com/Web-Ops/ufo/...`
+1. Install the UFO binary `go get -u github.com/fuzz-productions/ufo/...`
     * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
 
 ## Usage

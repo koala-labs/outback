@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	"github.com/fuzz-productions/ufo/pkg/ufo"
 
 	lru "github.com/hashicorp/golang-lru"
 	"github.com/spf13/cobra"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
+	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
 )
 
 type Empty struct{}

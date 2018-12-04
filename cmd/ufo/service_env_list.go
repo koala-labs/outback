@@ -5,8 +5,8 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/service/ecs"
+	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
 	"github.com/spf13/cobra"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 var serviceListEnvCmd = &cobra.Command{

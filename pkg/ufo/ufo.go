@@ -18,7 +18,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/pkg/errors"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
+	"github.com/fuzz-productions/ufo/pkg/term"
 )
 
 type AwsConfig struct {

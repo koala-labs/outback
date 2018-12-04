@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
+	"github.com/fuzz-productions/ufo/pkg/term"
 )
 
 // ImageBuild builds a docker image based on the configured dockerfile for

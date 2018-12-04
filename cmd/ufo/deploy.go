@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/fuzz-productions/ufo/pkg/git"
+	"github.com/fuzz-productions/ufo/pkg/term"
+	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
 	"github.com/spf13/cobra"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/git"
-	"gitlab.fuzzhq.com/Web-Ops/ufo/pkg/term"
-	UFO "gitlab.fuzzhq.com/Web-Ops/ufo/pkg/ufo"
 )
 
 var deployCmd = &cobra.Command{
