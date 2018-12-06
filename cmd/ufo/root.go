@@ -6,8 +6,8 @@ import (
 
 	"github.com/spf13/viper"
 
-	"github.com/spf13/cobra"
 	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
+	"github.com/spf13/cobra"
 )
 
 var (
@@ -28,7 +28,7 @@ var rootCmd = &cobra.Command{
 	Use:     "ufo",
 	Short:   "Ufo is an ecs deployment tool",
 	Long:    ``,
-	Version: "v1.0.0",
+	Version: "v1.0.1",
 }
 
 // Execute adds all child commands so the root command sets flags appropriately.
@@ -47,7 +47,7 @@ func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
 	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
-	rootCmd.Flags().StringVar(&flagConfigName, "config", "config", "ufo config name")
+	rootCmd.PersistentFlags().StringVar(&flagConfigName, "config", "config", "ufo config name")
 }
 
 func loadConfig() {
