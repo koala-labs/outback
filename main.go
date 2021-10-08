@@ -1,6 +1,6 @@
 package main
 
-import cmd "github.com/fuzz-productions/ufo/cmd/ufo"
+import cmd "github.com/koala-labs/outback/cmd/outback"
 
 func main() {
 	cmd.Execute()

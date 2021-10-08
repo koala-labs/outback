@@ -1,2 +1,4 @@
 *.ufo/
+*.outback/
 debug
+coverage.txt

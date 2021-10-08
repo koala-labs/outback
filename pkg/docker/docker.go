@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/fuzz-productions/ufo/pkg/term"
+	"github.com/koala-labs/outback/pkg/term"
 )
 
 // ImageBuild builds a docker image based on the configured dockerfile for

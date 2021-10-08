@@ -1,4 +1,4 @@
-module github.com/fuzz-productions/ufo
+module github.com/koala-labs/outback
 
 go 1.14
 
