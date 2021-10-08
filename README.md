@@ -1,35 +1,37 @@
-# Outback CLI
+# Outback CLI 🦘
 
-## Prerequisites
+## About The Project
+
+Outback is CLI tool written in Go to help streamline the process of deploying containerized applications to AWS Elastic Container Service.
+
+Outback automates the process of building a Docker image, pushing the image to AWS's container registry, creating an updated ECS Task Definition pointing to the new image, and finally updating the ECS service to use the new image.
+
+## Getting Started
+
+### Prerequisites
 
 1. Install [Go](https://golang.org/doc/install)
 
    `brew install go`
 
-2. Setup your GOPATH
+2. Setup make sure that [Go compiled binaries are included in your $PATH](https://golang.org/doc/tutorial/compile-install)
 
-   `export GOPATH="$HOME/go"`
+3. Install [Docker](https://docs.docker.com/install/)
 
-3. Add go compiled binaries to your PATH
+4. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
 
-   `export PATH=$GOPATH/bin:$PATH`
+5. Create an [AWS access key](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey)
 
-4. Install [Docker](https://docs.docker.com/install/)
-
-5. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
-
-6. Create an [AWS access key](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey)
-
-7. Add AWS access key to the file `~/.aws/credentials` to match the profile in the config of Outback `.outback/config.json`.
+6. Add AWS access key to the file `~/.aws/credentials` to match the profile in the config of Outback `.outback/config.json`.
    ```
    [default]
    aws_access_key_id = KEYVALUE
    aws_secret_access_key = ACCESSKEYVALUE
    ```
 
-## Installing Outback
+### Installing Outback
 
-1. Install the Outback binary `go get github.com/koala-labs/outback`
+1. Install the Outback binary `go install github.com/koala-labs/outback@latest`
 
 ## Usage
 
@@ -86,7 +88,7 @@ A deployment consists of 5 steps necessary to update an AWS ECS Service.
 
 - [deploy](#outback-deploy)
 
-##### outback deploy
+##### `outback deploy`
 
 ```console
 outback deploy --cluster --verbose --login
@@ -140,7 +142,7 @@ distribute traffic amongst the tasks in your service.
 - [env rm](#outback-service-env-rm)
 - [env list](#outback-service-env-list)
 
-##### outback service env add
+##### `outback service env add`
 
 ```console
 outback service env add --env <key=value>
@@ -151,7 +153,7 @@ Add/Update environment variables
 At least one environment variable must be specified via the --env flag. Specify
 --env with a key=value parameter multiple times to add multiple variables.
 
-##### outback service env rm
+##### `outback service env rm`
 
 ```console
 outback service env rm --key <key-name>
@@ -162,7 +164,7 @@ Remove environment variables
 Removes the environment variable specified via the --key flag. Specify --key with
 a key name multiple times to unset multiple variables.
 
-##### outback service env list
+##### `outback service env list`
 
 ```console
 outback service env list
@@ -170,7 +172,7 @@ outback service env list
 
 List environment variables
 
-##### outback service list
+##### `outback service list`
 
 ```console
 outback service info --cluster dev --service frontend
@@ -186,7 +188,7 @@ Console, or until they are interrupted for any reason.
 
 - [run](#outback-task-run)
 
-##### outback task run
+##### `outback task run`
 
 ```console
 outback task run --command "<command>"
@@ -194,13 +196,13 @@ outback task run --command "<command>"
 
 Run a one off tasks
 
-You must specify a cluster, service, and command to run. The command will use the image described in the task definition for the service that is specified. When specifying a command, the task definitions current command will be overriden with the one specified.
+You must specify a cluster, service, and command to run. The command will use the image described in the task definition for the service that is specified. When specifying a command, the task definitions current command will be overridden with the one specified.
 
 There is also an option of creating command aliases in `.outback/config.json`. Once a command alias is in the outback config, specifying that alias via the --command flag will run the configured command.
 
 If the awslogs driver is configured for the service in which you base your task. Logs for that task will be sent to cloudwatch under the same log group and prefix as described in the task definition.
 
-##### outback rollback
+##### `outback rollback`
 
 The rollback option will update the ECS service revision number to the desired task number. If the need is to rollback to the previous deploy, use:
 
@@ -215,3 +217,30 @@ Rollback can use `--revision` or `-r` to pass the revision number that is desire
 ```console
 outback rollback --cluster dev --revision 123
 ```
+
+## Tests
+
+Use the following command to run the tests and output function-level code coverage
+
+```sh
+go test ./... -coverprofile coverage.txt && go tool cover -func coverage.txt
+```
+
+## Contributing
+
+Contributions are what make the open source community such an amazing place to be learn, inspire, and create. Any contributions you make are **greatly appreciated**.
+
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Run the test suite (`go test ./...`)
+4. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+5. Push to the Branch (`git push origin feature/AmazingFeature`)
+6. Open a Pull Request
+
+## License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+## Contact
+
+Koala Labs - [@koala_labs](https://twitter.com/koala_labs) - engineering@koala.io
