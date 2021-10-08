@@ -6,8 +6,8 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/spf13/cobra"
 	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
+	"github.com/spf13/cobra"
 )
 
 var (
