@@ -4,54 +4,38 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/fuzz-productions/ufo/pkg/git"
 	"github.com/fuzz-productions/ufo/pkg/term"
 	UFO "github.com/fuzz-productions/ufo/pkg/ufo"
 	"github.com/spf13/cobra"
 )
 
-var buildArgs []string
+var revisionNumber int
 
-var deployCmd = &cobra.Command{
-	Use:   "deploy",
-	Short: "Create a deployment",
+var rollbackCmd = &cobra.Command{
+	Use:   "rollback",
+	Short: "Rollback a deployment",
 	Long: `A cluster must be specified via the --cluster flag.
 	The --verbose flag can be input to enable verbose output.
 	The --login flag can be input to login to AWS ECR.`,
-	RunE: runDeploy,
+	RunE: runRollback,
 }
 
-func runDeploy(cmd *cobra.Command, args []string) error {
-	return deploy(flagCluster, flagTimeout)
+func runRollback(cmd *cobra.Command, args []string) error {
+	return rollback(flagCluster, flagTimeout)
 }
 
-func deploy(clusterName string, timeout int) error {
+func rollback(clusterName string, timeout int) error {
 	ufo := UFO.New(awsConfig)
-
-	commit, err := git.GetCommit()
-	if err != nil {
-		return err
-	}
 
 	cluster, err := cfg.getCluster(clusterName)
 	if err != nil {
 		return err
 	}
 
-	configBuildArgs := cfg.getBuildArgs(clusterName)
+	deployDetail := &UFO.DeployDetail{}
+	deployDetail.SetRevisionNumber(revisionNumber)
 
 	deployment := &UFO.Deployment{}
-	deployment.SetCommitHash(commit)
-	deployment.SetRepo(cfg.Repo)
-	deployment.SetDockerfile(cluster.Dockerfile)
-	deployment.SetBuildArgs(buildArgs)
-	deployment.SetConfigBuildArgs(configBuildArgs)
-
-	// Build Docker image and push to repo
-	err = ufo.LoginBuildPushImage(deployment.BuildDetail)
-	if err != nil {
-		return err
-	}
 
 	for _, service := range cluster.Services {
 		detail := ufo.NewDeployDetail()
@@ -75,6 +59,7 @@ func deploy(clusterName string, timeout int) error {
 		detail.SetService(ecsService)
 
 		// Get the Service's TaskDefinition
+		// if revision set here
 		ecsTaskDef, err := ufo.GetTaskDefinition(detail.Cluster, detail.Service)
 		if err != nil {
 			return err
@@ -88,7 +73,7 @@ func deploy(clusterName string, timeout int) error {
 
 	term.Clear()
 
-	errCh := ufo.DeployAll(deployment)
+	errCh := ufo.RollbackAll(deployment, deployDetail)
 
 	for err := range errCh {
 		return err
@@ -100,7 +85,7 @@ func deploy(clusterName string, timeout int) error {
 	for i := 0; i < len(deployment.DeployDetails); i++ {
 		select {
 		case detail := <-doneCh:
-			fmt.Printf("Service %s (%s) is now running \n", *detail.Service.ServiceName, detail.TaskDefinitionFamily())
+			fmt.Printf("Service %s (%s) is now running \n", *detail.Service.ServiceName, detail.TaskDefinitionFamilyName)
 		case <-time.After(time.Minute * time.Duration(timeout)):
 			return ErrDeployTimeout
 		}
@@ -110,6 +95,6 @@ func deploy(clusterName string, timeout int) error {
 }
 
 func init() {
-	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().StringSliceVarP(&buildArgs, "build-arg", "b", []string{}, "Set build-time variables")
+	rootCmd.AddCommand(rollbackCmd)
+	rollbackCmd.Flags().IntVarP(&revisionNumber, "revision", "r", 0, "Set the task revision number")
 }

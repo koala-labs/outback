@@ -1,12 +1,16 @@
 package ufo
 
 import (
+	"encoding/base64"
 	"fmt"
+	"os"
 	"os/exec"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -18,7 +22,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/ecs"
 	"github.com/aws/aws-sdk-go/service/ecs/ecsiface"
 	"github.com/pkg/errors"
-	"github.com/fuzz-productions/ufo/pkg/term"
 )
 
 type AwsConfig struct {
@@ -35,10 +38,16 @@ type UFO struct {
 
 // New creates a UFO session and connects to AWS to create a session
 func New(awsConfig *AwsConfig) *UFO {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		Config:  aws.Config{Region: aws.String(awsConfig.Region)},
-		Profile: awsConfig.Profile,
-	}))
+	var sess *session.Session
+	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			Config: aws.Config{Region: aws.String(awsConfig.Region)}}))
+	} else {
+		sess = session.Must(session.NewSessionWithOptions(session.Options{
+			Config:  aws.Config{Region: aws.String(awsConfig.Region)},
+			Profile: awsConfig.Profile,
+		}))
+	}
 
 	app := &UFO{
 		Config: awsConfig,
@@ -272,6 +281,35 @@ func (u *UFO) RegisterTaskDefinitionWithEnvVars(t *ecs.TaskDefinition) (*ecs.Tas
 	return result.TaskDefinition, nil
 }
 
+// RollbackTaskDefinition updates the task definition to the desired revision number
+func (u *UFO) RollbackTaskDefinition(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefinition, n int) (string, error) {
+
+	var taskFamilyRevision string
+
+	r := regexp.MustCompile(`([^\/]+)$`)
+	x := regexp.MustCompile(`([^\/]+)`)
+
+	currentTaskDefinitionArn := *t.TaskDefinitionArn
+	currentTaskDefinitionFamilyRevision := r.FindString(currentTaskDefinitionArn)
+	currentTaskDefinitionArnName := x.FindString(currentTaskDefinitionArn)
+	split := strings.Split(currentTaskDefinitionFamilyRevision, ":")
+	taskFamily, taskRevision := split[0], split[1]
+
+	if n != 0 {
+		taskFamilyRevision = strings.Join([]string{taskFamily, ":", strconv.Itoa(n)}, "")
+	} else {
+		i, _ := strconv.Atoi(taskRevision)
+		i--
+		taskFamilyRevision = strings.Join([]string{taskFamily, ":", strconv.Itoa(i)}, "")
+	}
+
+	taskFamilyRevisionArn := currentTaskDefinitionArnName + "/" + taskFamilyRevision
+	*t.TaskDefinitionArn = taskFamilyRevisionArn
+	_, err := u.RollbackService(c, s, taskFamilyRevision)
+
+	return taskFamilyRevision, err
+}
+
 // UpdateTaskDefinitionImage copies a task definition and update its image tag
 func (u *UFO) UpdateTaskDefinitionImage(t ecs.TaskDefinition, tag string) ecs.TaskDefinition {
 	r := regexp.MustCompile(`(\S+):`)
@@ -292,6 +330,21 @@ func (u *UFO) GetRepoFromImage(image *string) string {
 	repo := r.FindStringSubmatch(*image)[1]
 
 	return repo
+}
+
+// RollbackService updates the ECS service with the desired rollback revision
+func (u *UFO) RollbackService(c *ecs.Cluster, s *ecs.Service, t string) (*ecs.UpdateServiceOutput, error) {
+	result, err := u.ECS.UpdateService(&ecs.UpdateServiceInput{
+		Cluster:        c.ClusterArn,
+		Service:        s.ServiceArn,
+		TaskDefinition: aws.String(t),
+	})
+
+	if err != nil {
+		return nil, errors.Wrap(err, errCouldNotUpdateService)
+	}
+
+	return result, nil
 }
 
 // UpdateService updates a service in a cluster with a new task definition
@@ -394,10 +447,40 @@ func (u *UFO) IsTaskRunning(cluster *string, task *string) error {
 
 // ECRLogin uses an AWS region & profile to login to ECR
 func (u *UFO) ECRLogin() error {
-	cmd := fmt.Sprintf("$(aws ecr get-login --no-include-email --region %s --profile %s)", u.Config.Region, u.Config.Profile)
-	getLogin := exec.Command("bash", "-c", cmd)
+	input := &ecr.GetAuthorizationTokenInput{}
 
-	if err := term.PrintStdout(getLogin); err != nil {
+	resp, err := u.ECR.GetAuthorizationToken(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case ecr.ErrCodeServerException:
+				fmt.Println(ecr.ErrCodeServerException, aerr.Error())
+			case ecr.ErrCodeInvalidParameterException:
+				fmt.Println(ecr.ErrCodeInvalidParameterException, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			fmt.Println(aerr.Error())
+		}
+
+	}
+
+	auth := resp.AuthorizationData
+	decode, err := base64.StdEncoding.DecodeString(*auth[0].AuthorizationToken)
+	if err != nil {
+		return err
+	}
+
+	token := strings.SplitN(string(decode), ":", 2)
+	user := token[0]
+	password := token[1]
+	endpoint := *auth[0].ProxyEndpoint
+
+	cmd := fmt.Sprintf("docker login -u %s -p %s %s", user, password, endpoint)
+	login := exec.Command("bash", "-c", cmd)
+	loginErr := login.Run()
+	if loginErr != nil {
 		return errors.Wrap(err, errECRLogin)
 	}
 

@@ -18,16 +18,20 @@ type Deployment struct {
 }
 
 type DeployDetail struct {
-	Cluster        *ecs.Cluster
-	Service        *ecs.Service
-	TaskDefinition *ecs.TaskDefinition
-	Done           bool
+	Cluster                  *ecs.Cluster
+	Service                  *ecs.Service
+	TaskDefinition           *ecs.TaskDefinition
+	TaskDefinitionFamilyName string
+	RevisionNumber           int
+	Done                     bool
 }
 
 type BuildDetail struct {
-	Repo       string
-	CommitHash string
-	Dockerfile string
+	Repo            string
+	CommitHash      string
+	Dockerfile      string
+	buildArgs       []string
+	configBuildArgs []string
 }
 
 func (d *DeployDetail) SetCluster(cluster *ecs.Cluster) {
@@ -46,6 +50,14 @@ func (d *DeployDetail) SetDone(done bool) {
 	d.Done = done
 }
 
+func (d *DeployDetail) SetTaskDefinitionFamilyName(TaskDefinitionFamilyName string) {
+	d.TaskDefinitionFamilyName = TaskDefinitionFamilyName
+}
+
+func (d *DeployDetail) SetRevisionNumber(revisionNumber int) {
+	d.RevisionNumber = revisionNumber
+}
+
 func (d *Deployment) SetRepo(repo string) {
 	d.BuildDetail.Repo = repo
 }
@@ -56,6 +68,14 @@ func (d *Deployment) SetCommitHash(commit string) {
 
 func (d *Deployment) SetDockerfile(dockerfile string) {
 	d.BuildDetail.Dockerfile = dockerfile
+}
+
+func (d *Deployment) SetBuildArgs(buildArgs []string) {
+	d.BuildDetail.buildArgs = buildArgs
+}
+
+func (d *Deployment) SetConfigBuildArgs(configBuildArgs []string) {
+	d.BuildDetail.configBuildArgs = configBuildArgs
 }
 
 func (d *Deployment) TaskDefinitions() string {
@@ -102,6 +122,30 @@ func (u *UFO) AwaitServicesRunning(deployment *Deployment) chan *DeployDetail {
 	return doneCh
 }
 
+func (u *UFO) RollbackAll(deploy *Deployment, deployDetail *DeployDetail) <-chan error {
+	var wg sync.WaitGroup
+	errCh := make(chan error)
+
+	wg.Add(len(deploy.DeployDetails))
+	for _, detail := range deploy.DeployDetails {
+		go func(detail *DeployDetail) {
+			taskDefName, err := u.RollbackTaskDefinition(detail.Cluster, detail.Service, detail.TaskDefinition, deployDetail.RevisionNumber)
+
+			if err != nil {
+				errCh <- err
+				wg.Done()
+			}
+			detail.SetTaskDefinitionFamilyName(taskDefName)
+
+			wg.Done()
+		}(detail)
+	}
+
+	wg.Wait()
+	close(errCh)
+	return errCh
+}
+
 func (u *UFO) DeployAll(deploy *Deployment) <-chan error {
 	var wg sync.WaitGroup
 	errCh := make(chan error)
@@ -136,7 +180,7 @@ func (u *UFO) LoginBuildPushImage(info BuildDetail) error {
 		return err
 	}
 
-	err = docker.ImageBuild(info.Repo, info.CommitHash, info.Dockerfile)
+	err = docker.ImageBuild(info.Repo, info.CommitHash, info.Dockerfile, info.buildArgs, info.configBuildArgs)
 
 	if err != nil {
 		return err

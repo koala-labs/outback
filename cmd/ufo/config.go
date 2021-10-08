@@ -20,6 +20,7 @@ type Cluster struct {
 	Name       string   `mapstructure:"name"`
 	Services   []string `mapstructure:"services"`
 	Dockerfile string   `mapstructure:"dockerfile"`
+	BuildArgs  []string `mapstructure:"build-args"`
 }
 
 type Task struct {
@@ -87,4 +88,13 @@ func (c *Config) getCommand(name string) (*string, error) {
 	}
 
 	return nil, ErrCommandNotFound
+}
+
+func (c *Config) getBuildArgs(in string) []string {
+	for _, cluster := range c.Clusters {
+		if cluster.Name == in {
+			return cluster.BuildArgs
+		}
+	}
+	return []string{}
 }

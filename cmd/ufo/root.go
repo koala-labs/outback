@@ -20,6 +20,7 @@ var (
 	flagCluster    string
 	flagService    string
 	flagConfigName string
+	flagTimeout    int
 )
 
 // RootCmd represents the base command when called
@@ -28,7 +29,7 @@ var rootCmd = &cobra.Command{
 	Use:     "ufo",
 	Short:   "Ufo is an ecs deployment tool",
 	Long:    ``,
-	Version: "v1.0.1",
+	Version: "v1.2.0",
 }
 
 // Execute adds all child commands so the root command sets flags appropriately.
@@ -48,6 +49,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&flagCluster, "cluster", "c", "", "AWS ECS Cluster")
 	rootCmd.PersistentFlags().StringVarP(&flagService, "service", "s", "", "Service in an ECS cluster")
 	rootCmd.PersistentFlags().StringVar(&flagConfigName, "config", "config", "ufo config name")
+	rootCmd.PersistentFlags().IntVarP(&flagTimeout, "timeout", "t", 5, "Deployment Timeout Time")
 }
 
 func loadConfig() {

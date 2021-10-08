@@ -1,10 +1,10 @@
 # UFO CLI
 
-## Install Prerequisites
+## Prerequisites
 
-1. Install go
+1. Install [Go](https://golang.org/doc/install)
 
-    `$ brew install go`
+    `brew install go`
 
 2. Setup your GOPATH
 
@@ -14,9 +14,24 @@
 
     `export PATH=$GOPATH/bin:$PATH`
 
+4. Install [Docker](https://docs.docker.com/install/)
+
+5. Install [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html)
+
+6. Create an [AWS access key](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_access-keys.html#Using_CreateAccessKey)
+
+7. Add AWS access key to the file `~/.aws/credentials` to match the profile in the config of UFO `.ufo/config.json`.
+	```
+	[default]
+	aws_access_key_id = KEYVALUE
+	aws_secret_access_key = ACCESSKEYVALUE
+	```
+
 ## Installing UFO
 
-1. Install the UFO binary `go get -u github.com/fuzz-productions/ufo/...`
+
+1. Install the UFO binary `go get github.com/fuzz-productions/ufo`
+
     * If you have issues pulling a private repository, see https://gist.github.com/shurcooL/6927554
 
 ## Usage
@@ -53,6 +68,7 @@ UFO will relies on this config to run its operations.
 * ufo deploy
 * ufo service
 * ufo task
+* ufo rollback
 
 #### Global Flags
 
@@ -82,6 +98,38 @@ ufo deploy --cluster --verbose --login
 Create a deployment
 
 A cluster must be specified via the --cluster flag. The --verbose flag can be input to enable verbose output. The --login flag can be input to login to AWS ECR.
+
+Docker build arguments
+
+UFO can use `--build-arg` or `-b` to pass arguments during the docker build phase. Multiple build arguments can be passed, see example below.
+
+```console
+ufo deploy --cluster dev --build-arg NODE_ENV=dev --build-arg CAT=lazy
+```
+
+Docker build arguments can also be passed though the `.ufo/config.json` and coexist with the `--build-arg` command option.
+
+```json
+{
+	"profile": "default",
+	"region": "us-east-1",
+	"repo": "default.dkr.ecr.us-west-1.amazonaws.com/default",
+	"clusters": [
+		{
+			"name": "dev",
+			"services": ["api"],
+			"dockerfile": "Dockerfile",
+			"build-args": ["NODE_ENV=dev", "CAT=lazy"]
+		}
+	],
+	"tasks": [
+		{
+			"name": "migrate",
+			"command": "php artisan migrate"
+		}
+	]
+}
+```
 
 #### Services
 
@@ -126,6 +174,14 @@ ufo service env list
 
 List environment variables
 
+##### ufo service list
+
+```console
+ufo service info --cluster dev --service frontend
+```
+
+To list the status of service on a cluster, in this example: cluster dev, frontend service.
+
 #### Tasks
 
 Tasks are one-time executions of your container. Instances of your task are run
@@ -147,3 +203,19 @@ You must specify a cluster, service, and command to run. The command will use th
 There is also an option of creating command aliases in `.ufo/config.json`. Once a command alias is in the ufo config, specifying that alias via the --command flag will run the configured command.
 
 If the awslogs driver is configured for the service in which you base your task. Logs for that task will be sent to cloudwatch under the same log group and prefix as described in the task definition.
+
+##### ufo rollback
+
+The rollback option will update the ECS service revision number to the desired task number. If the need is to rollback to the previous deploy, use:
+
+```console
+ufo rollback --cluster dev
+```
+
+Revision Number
+
+Rollback can use `--revision` or `-r` to pass the revision number that is desired for the ECS service to run:
+
+```console
+ufo rollback --cluster dev --revision 123
+```

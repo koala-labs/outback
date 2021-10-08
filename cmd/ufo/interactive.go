@@ -76,7 +76,7 @@ func interactiveDeploy(cmd *cobra.Command, args []string) error {
 	}
 
 	if toBool(confirmAnswer.Confirm) {
-		return deploy(clusterAnswer.Cluster)
+		return deploy(clusterAnswer.Cluster, 5)
 	}
 
 	return nil

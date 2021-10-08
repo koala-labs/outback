@@ -1,9 +1,11 @@
 module github.com/fuzz-productions/ufo
 
+go 1.14
+
 require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/Netflix/go-expect v0.0.0-20180928190340-9d1f4485533b // indirect
-	github.com/aws/aws-sdk-go v1.15.89
+	github.com/aws/aws-sdk-go v1.20.20
 	github.com/hashicorp/golang-lru v0.5.0
 	github.com/hinshun/vt10x v0.0.0-20180809195222-d55458df857c // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
