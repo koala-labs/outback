@@ -146,7 +146,7 @@ func (u *Outback) GetService(c *ecs.Cluster, service string) (*ecs.Service, erro
 	}
 
 	if len(res.Services) < 1 {
-		return nil, errors.Wrap(err, errServiceNotFound)
+		return nil, fmt.Errorf("'%s' %s", service, errServiceNotFound)
 	}
 
 	return res.Services[0], nil

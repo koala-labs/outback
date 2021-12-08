@@ -1,6 +1,7 @@
 package outback
 
 import (
+	"fmt"
 	"reflect"
 	"strings"
 	"testing"
@@ -527,7 +528,7 @@ func TestOutbackGetServiceError(t *testing.T) {
 			Resp: &ecs.DescribeServicesOutput{
 				Services: []*ecs.Service{},
 			},
-			Expected: errors.Wrap(nil, errServiceNotFound),
+			Expected: fmt.Errorf("'%s' %s", "test-service", errServiceNotFound),
 		},
 	}
 
@@ -539,7 +540,7 @@ func TestOutbackGetServiceError(t *testing.T) {
 
 		_, err := outback.GetService(&ecs.Cluster{}, "test-service")
 
-		if a, e := err, c.Expected; a != e {
+		if a, e := err, c.Expected; a.Error() != e.Error() {
 			t.Errorf("%d, expected %v, got %v", i, e, a)
 		}
 	}
