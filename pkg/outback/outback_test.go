@@ -1132,420 +1132,50 @@ func TestOutbackRunTaskError(t *testing.T) {
 	}
 }
 
-// func TestOutbackDeploy(t *testing.T) {
-// 	emptyValue := ""
-// 	fam := "family1"
-// 	command := "echo"
-// 	commands := []*string{&command, &command}
-// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-// 	commit := "8c018c8"
-// 	newImage := fmt.Sprintf("111222333444.dkr.ecr.us-west-1.amazonaws.com/image:%s", commit)
+func TestOutbackUpdateTaskDefinitionImage(t *testing.T) {
+	outback := Outback{
+		ECS: mockedRunTask{},
+		ECR: mockedECRClient{},
+	}
 
-// 	cases := []struct {
-// 		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
-// 		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
-// 		UpdateServiceResp   *ecs.UpdateServiceOutput
-// 		Expected            *ecs.TaskDefinition
-// 	}{
-// 		{
-// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-// 				TaskDefinition: &ecs.TaskDefinition{
-// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 						Command: commands,
-// 						Image:   &image,
-// 					}},
-// 					Family:            &fam,
-// 					TaskDefinitionArn: aws.String("task-definitionarn"),
-// 				},
-// 			},
-// 			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
-// 				TaskDefinition: &ecs.TaskDefinition{
-// 					Cpu:              &emptyValue,
-// 					Family:           &fam,
-// 					Memory:           &emptyValue,
-// 					Volumes:          []*ecs.Volume{},
-// 					NetworkMode:      &emptyValue,
-// 					ExecutionRoleArn: &emptyValue,
-// 					TaskRoleArn:      &emptyValue,
-// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 						Command: commands,
-// 						Image:   &image,
-// 					}},
-// 					RequiresCompatibilities: []*string{&emptyValue},
-// 				},
-// 			},
-// 			UpdateServiceResp: &ecs.UpdateServiceOutput{
-// 				Service: &ecs.Service{},
-// 			},
-// 			Expected: &ecs.TaskDefinition{
-// 				ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 					Command: commands,
-// 					Image:   &newImage,
-// 				}},
-// 				Family: &fam,
-// 			},
-// 		},
-// 	}
+	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
+		TaskDefinitionArn: aws.String("taskdefarn"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{{
+			Name: aws.String("test-container"),
+			Image: aws.String("test-container:100"),
+		}},
+	},"test-container", "123")
 
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedDeploy{
-// 				DescribeTaskDefResp: c.DescribeTaskDefResp,
-// 				RegisterTaskDefResp: c.RegisterTaskDefResp,
-// 				UpdateServiceResp:   c.UpdateServiceResp,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
+	updatedTaskDefinitionImage := result.ContainerDefinitions[0].Image
+	expectedTaskDefinitionImage := "test-container:123"
 
-// 		newTaskDef, err := outback.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
+	if *updatedTaskDefinitionImage != expectedTaskDefinitionImage {
+		t.Errorf("expected %v value, got %v", expectedTaskDefinitionImage, *updatedTaskDefinitionImage)
+	}
+}
 
-// 		if err != nil {
-// 			t.Fatalf("%d, unexpected error", err)
-// 		}
+func TestOutbackUpdateTaskDefinitionImageWithMultipleContainers(t *testing.T) {
+	outback := Outback{
+		ECS: mockedRunTask{},
+		ECR: mockedECRClient{},
+	}
 
-// 		if a, e := *newTaskDef.Family, *c.Expected.Family; a != e {
-// 			t.Errorf("%d, expected %v family, got %v", i, e, a)
-// 		}
+	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
+		TaskDefinitionArn: aws.String("taskdefarn"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{{
+			Name: aws.String("other-container"),
+			Image: aws.String("other-container:999"),
+		}, {
+			Name: aws.String("target-container"),
+			Image: aws.String("target-container:100"),
+		}},
+	}, "target-container", "123")
 
-// 		if a, e := *newTaskDef.ContainerDefinitions[0].Image, *c.Expected.ContainerDefinitions[0].Image; a != e {
-// 			t.Errorf("%d, expected %v image, got %v", i, e, a)
-// 		}
+	cases := []string {"other-container:999", "target-container:123"}
 
-// 		actualContainerCommand := strings.Join(aws.StringValueSlice(newTaskDef.ContainerDefinitions[0].Command), " ")
-// 		expectedContainerCommand := strings.Join(aws.StringValueSlice(c.Expected.ContainerDefinitions[0].Command), " ")
-
-// 		if a, e := actualContainerCommand, expectedContainerCommand; a != e {
-// 			t.Errorf("%d, expected %v command, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackDeployError(t *testing.T) {
-// 	fam := "family1"
-// 	command := "echo"
-// 	commands := []*string{&command, &command}
-// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-// 	commit := "8c018c8"
-
-// 	cases := []struct {
-// 		DescribeTaskDefResp  *ecs.DescribeTaskDefinitionOutput
-// 		UpdateServiceResp    *ecs.UpdateServiceOutput
-// 		RegisterTaskDefError error
-// 		UpdateServiceError   error
-// 		Expected             error
-// 	}{
-// 		{
-// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-// 				TaskDefinition: &ecs.TaskDefinition{
-// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 						Command: commands,
-// 						Image:   &image,
-// 					}},
-// 					Family:            &fam,
-// 					TaskDefinitionArn: aws.String("task-definitionarn"),
-// 				},
-// 			},
-// 			RegisterTaskDefError: errors.New("test-error"),
-// 			Expected:             errors.Wrap(errors.New("test-error"), errCouldNotRegisterTaskDefinition),
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedDeploy{
-// 				DescribeTaskDefResp:  c.DescribeTaskDefResp,
-// 				RegisterTaskDefResp:  nil,
-// 				RegisterTaskDefError: c.RegisterTaskDefError,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		_, err := outback.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-// 		if a, e := err, c.Expected; a.Error() != e.Error() {
-// 			t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackDeployError2(t *testing.T) {
-// 	fam := "family1"
-// 	command := "echo"
-// 	emptyValue := ""
-// 	commands := []*string{&command, &command}
-// 	image := "111222333444.dkr.ecr.us-west-1.amazonaws.com/image:cbd0d9c"
-// 	commit := "8c018c8"
-
-// 	cases := []struct {
-// 		DescribeTaskDefResp *ecs.DescribeTaskDefinitionOutput
-// 		RegisterTaskDefResp *ecs.RegisterTaskDefinitionOutput
-// 		UpdateServiceError  error
-// 		Expected            error
-// 	}{
-// 		{
-// 			DescribeTaskDefResp: &ecs.DescribeTaskDefinitionOutput{
-// 				TaskDefinition: &ecs.TaskDefinition{
-// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 						Command: commands,
-// 						Image:   &image,
-// 					}},
-// 					Family:            &fam,
-// 					TaskDefinitionArn: aws.String("task-definitionarn"),
-// 				},
-// 			},
-// 			RegisterTaskDefResp: &ecs.RegisterTaskDefinitionOutput{
-// 				TaskDefinition: &ecs.TaskDefinition{
-// 					Cpu:              &emptyValue,
-// 					Family:           &fam,
-// 					Memory:           &emptyValue,
-// 					Volumes:          []*ecs.Volume{},
-// 					NetworkMode:      &emptyValue,
-// 					ExecutionRoleArn: &emptyValue,
-// 					TaskRoleArn:      &emptyValue,
-// 					ContainerDefinitions: []*ecs.ContainerDefinition{&ecs.ContainerDefinition{
-// 						Command: commands,
-// 						Image:   &image,
-// 					}},
-// 					RequiresCompatibilities: []*string{&emptyValue},
-// 				},
-// 			},
-// 			UpdateServiceError: errors.New("test-error"),
-// 			Expected:           errors.Wrap(errors.New("test-error"), errCouldNotUpdateService),
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedDeploy{
-// 				DescribeTaskDefResp: c.DescribeTaskDefResp,
-// 				RegisterTaskDefResp: c.RegisterTaskDefResp,
-// 				UpdateServiceError:  c.UpdateServiceError,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		_, err := outback.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-// 		if a, e := err, c.Expected; a.Error() != e.Error() {
-// 			t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackDeployError3(t *testing.T) {
-// 	commit := "8c018c8"
-
-// 	cases := []struct {
-// 		DescribeTaskDefError error
-// 		Expected             error
-// 	}{
-// 		{
-// 			DescribeTaskDefError: errors.New("test-error"),
-// 			Expected:             errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTaskDefinition),
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedDeploy{
-// 				DescribeTaskDefError: errors.New("test-error"),
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		_, err := outback.Deploy(&ecs.Cluster{}, &ecs.Service{}, commit)
-
-// 		if a, e := err, c.Expected; a.Error() != e.Error() {
-// 			t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackIsServiceRunning(t *testing.T) {
-// 	cases := []struct {
-// 		ListTasksResp      *ecs.ListTasksOutput
-// 		ListTasksError     error
-// 		DescribeTasksResp  *ecs.DescribeTasksOutput
-// 		DescribeTasksError error
-// 		DesiredCount       *int64
-// 		Expected           *ServiceStatus
-// 	}{
-// 		{
-// 			ListTasksResp: &ecs.ListTasksOutput{
-// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-// 			},
-// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
-// 				Tasks: []*ecs.Task{&ecs.Task{
-// 					LastStatus:        aws.String("RUNNING"),
-// 					TaskDefinitionArn: aws.String("taskdefarn"),
-// 				}},
-// 			},
-// 			DesiredCount: aws.Int64(2),
-// 			Expected: &ServiceStatus{
-// 				arn:     "taskdefarn",
-// 				running: true,
-// 			},
-// 		},
-// 		{
-// 			ListTasksResp: &ecs.ListTasksOutput{
-// 				TaskArns: aws.StringSlice([]string{}),
-// 			},
-// 			DesiredCount: aws.Int64(2),
-// 			Expected: &ServiceStatus{
-// 				arn:     "",
-// 				running: false,
-// 			},
-// 		},
-// 		{
-// 			ListTasksResp: &ecs.ListTasksOutput{
-// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-// 			},
-// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
-// 				Tasks: []*ecs.Task{&ecs.Task{
-// 					LastStatus:        aws.String("PENDING"),
-// 					TaskDefinitionArn: aws.String("taskdefarn"),
-// 				}},
-// 			},
-// 			DesiredCount: aws.Int64(2),
-// 			Expected: &ServiceStatus{
-// 				arn:     "taskdefarn",
-// 				running: false,
-// 			},
-// 		},
-// 		{
-// 			ListTasksResp: &ecs.ListTasksOutput{
-// 				TaskArns: aws.StringSlice([]string{}),
-// 			},
-// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
-// 				Tasks: []*ecs.Task{&ecs.Task{}},
-// 			},
-// 			DesiredCount: aws.Int64(0),
-// 			Expected: &ServiceStatus{
-// 				arn:     "",
-// 				running: false,
-// 			},
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedIsServiceRunning{
-// 				ListTasksResp:      c.ListTasksResp,
-// 				DescribeTasksResp:  c.DescribeTasksResp,
-// 				ListTasksError:     c.ListTasksError,
-// 				DescribeTasksError: c.DescribeTasksError,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		status, _ := outback.IsServiceRunning(
-// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
-// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
-// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
-
-// 		if a, e := status, c.Expected; a.running != e.running {
-// 			t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackIsServiceRunningError(t *testing.T) {
-// 	cases := []struct {
-// 		ListTasksResp      *ecs.ListTasksOutput
-// 		ListTasksError     error
-// 		DescribeTasksResp  *ecs.DescribeTasksOutput
-// 		DescribeTasksError error
-// 		DesiredCount       *int64
-// 		Expected           error
-// 	}{
-// 		{
-// 			ListTasksError: errors.New("test-error"),
-// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
-// 				Tasks: []*ecs.Task{&ecs.Task{
-// 					LastStatus:        aws.String("RUNNING"),
-// 					TaskDefinitionArn: aws.String("taskdefarn"),
-// 				}},
-// 			},
-// 			DesiredCount: aws.Int64(1),
-// 			Expected:     errors.Wrap(errors.New("test-error"), errFailedToListRunningTasks),
-// 		},
-// 		{
-// 			ListTasksResp: &ecs.ListTasksOutput{
-// 				TaskArns: aws.StringSlice([]string{"task1", "task2"}),
-// 			},
-// 			DescribeTasksError: errors.New("test-error"),
-// 			DesiredCount:       aws.Int64(1),
-// 			Expected:           errors.Wrap(errors.New("test-error"), errCouldNotRetrieveTasks),
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			ECS: mockedIsServiceRunning{
-// 				ListTasksResp:      c.ListTasksResp,
-// 				DescribeTasksResp:  c.DescribeTasksResp,
-// 				ListTasksError:     c.ListTasksError,
-// 				DescribeTasksError: c.DescribeTasksError,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		_, err := outback.IsServiceRunning(
-// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
-// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
-// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
-
-// 		if a, e := err, c.Expected; a.Error() != e.Error() {
-// 			t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		}
-// 	}
-// }
-
-// func TestOutbackAwaitDeploymentCompletion(t *testing.T) {
-// 	cases := []struct {
-// 		ExpectedDoneCh     chan bool
-// 		ExpectedErrCh      chan error
-// 		ListTasksResp      *ecs.ListTasksOutput
-// 		ListTasksError     error
-// 		DescribeTasksResp  *ecs.DescribeTasksOutput
-// 		DescribeTasksError error
-// 		DesiredCount       *int64
-// 	}{
-// 		{
-// 			ExpectedDoneCh: make(chan bool),
-// 			ExpectedErrCh:  make(chan error),
-// 			ListTasksError: errors.New("test-error"),
-// 			DescribeTasksResp: &ecs.DescribeTasksOutput{
-// 				Tasks: []*ecs.Task{&ecs.Task{
-// 					LastStatus:        aws.String("RUNNING"),
-// 					TaskDefinitionArn: aws.String("taskdefarn"),
-// 				}},
-// 			},
-// 			DesiredCount: aws.Int64(1),
-// 		},
-// 	}
-
-// 	for i, c := range cases {
-// 		outback := Outback{
-// 			,
-// 			ECS: mockedIsServiceRunning{
-// 				ListTasksResp:      c.ListTasksResp,
-// 				DescribeTasksResp:  c.DescribeTasksResp,
-// 				ListTasksError:     c.ListTasksError,
-// 				DescribeTasksError: c.DescribeTasksError,
-// 			},
-// 			ECR: mockedECRClient{},
-// 		}
-
-// 		doneCh, errCh := outback.AwaitDeploymentCompletion(
-// 			&ecs.Cluster{ClusterName: aws.String("test-cluster")},
-// 			&ecs.Service{ServiceName: aws.String("test-service"), DesiredCount: c.DesiredCount},
-// 			&ecs.TaskDefinition{TaskDefinitionArn: aws.String("taskdefarn")})
-
-// 		// if doneCh, errCh := running, c.Expected; a != e {
-// 		// 	t.Errorf("%d, expected %v, got %v", i, e, a)
-// 		// }
-
-// 		t.Errorf("%d, expected %v, got %v", i, <-doneCh, errCh)
-// 	}
-// }
+	for i, expectedTaskDefinitionImage := range cases {
+		if *result.ContainerDefinitions[i].Image != expectedTaskDefinitionImage {
+			t.Errorf("expected %v value, got %v", expectedTaskDefinitionImage, *result.ContainerDefinitions[i].Image)
+		}
+	}
+}

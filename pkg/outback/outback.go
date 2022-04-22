@@ -230,14 +230,14 @@ func (u *Outback) GetLastDeployedCommit(taskDefinition string) (string, error) {
 
 // RegisterTaskDefinitionWithImage creates a new task definition with the provided tag
 // This copies an existing task definition and only changes the tag used for the image
-func (u *Outback) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, tag string) (*ecs.TaskDefinition, error) {
+func (u *Outback) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service, repo string, tag string) (*ecs.TaskDefinition, error) {
 	t, err := u.GetTaskDefinition(c, s)
 
 	if err != nil {
 		return nil, err
 	}
 
-	newTaskDef := u.UpdateTaskDefinitionImage(*t, tag)
+	newTaskDef := u.UpdateTaskDefinitionImage(*t, repo, tag)
 
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via UpdateTaskDefinitionImage
@@ -311,14 +311,16 @@ func (u *Outback) RollbackTaskDefinition(c *ecs.Cluster, s *ecs.Service, t *ecs.
 }
 
 // UpdateTaskDefinitionImage copies a task definition and update its image tag
-func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, tag string) ecs.TaskDefinition {
-	r := regexp.MustCompile(`(\S+):`)
-	currentImage := *t.ContainerDefinitions[0].Image
-
-	repo := r.FindStringSubmatch(currentImage)[1]
+func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, tag string) ecs.TaskDefinition {
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
 
-	*t.ContainerDefinitions[0].Image = newImage
+	// search for a ContainerDefinition that contains target repo url in the docker Image
+	// if none matches don't make any updates
+	for i, container := range t.ContainerDefinitions {
+        if strings.Contains(*container.Image, repo) {
+            t.ContainerDefinitions[i].Image = &newImage
+        }
+    }
 
 	return t
 }
@@ -364,8 +366,8 @@ func (u *Outback) UpdateService(c *ecs.Cluster, s *ecs.Service, t *ecs.TaskDefin
 
 // UpdateServiceWithNewTaskDefinition registers a task definition with a tag and updates a service
 // with the newly registered task definition
-func (u *Outback) UpdateServiceWithNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, tag string) (*ecs.TaskDefinition, error) {
-	t, err := u.RegisterTaskDefinitionWithImage(c, s, tag)
+func (u *Outback) UpdateServiceWithNewTaskDefinition(c *ecs.Cluster, s *ecs.Service, repo string, tag string) (*ecs.TaskDefinition, error) {
+	t, err := u.RegisterTaskDefinitionWithImage(c, s, repo, tag)
 
 	if err != nil {
 		return nil, err
