@@ -1132,6 +1132,54 @@ func TestOutbackRunTaskError(t *testing.T) {
 	}
 }
 
+func TestOutbackUpdateTaskDefinitionImage(t *testing.T) {
+	outback := Outback{
+		ECS: mockedRunTask{},
+		ECR: mockedECRClient{},
+	}
+
+	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
+		TaskDefinitionArn: aws.String("taskdefarn"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{{
+			Name: aws.String("test-container"),
+			Image: aws.String("test-container:100"),
+		}},
+	},"test-container", "123")
+
+	updatedTaskDefinitionImage := result.ContainerDefinitions[0].Image
+	expectedTaskDefinitionImage := "test-container:123"
+
+	if *updatedTaskDefinitionImage != expectedTaskDefinitionImage {
+		t.Errorf("expected %v value, got %v", expectedTaskDefinitionImage, *updatedTaskDefinitionImage)
+	}
+}
+
+func TestOutbackUpdateTaskDefinitionImageWithMultipleContainers(t *testing.T) {
+	outback := Outback{
+		ECS: mockedRunTask{},
+		ECR: mockedECRClient{},
+	}
+
+	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
+		TaskDefinitionArn: aws.String("taskdefarn"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{{
+			Name: aws.String("other-container"),
+			Image: aws.String("other-container:999"),
+		}, {
+			Name: aws.String("target-container"),
+			Image: aws.String("target-container:100"),
+		}},
+	}, "target-container", "123")
+
+	cases := []string {"other-container:999", "target-container:123"}
+
+	for i, expectedTaskDefinitionImage := range cases {
+		if *result.ContainerDefinitions[i].Image != expectedTaskDefinitionImage {
+			t.Errorf("expected %v value, got %v", expectedTaskDefinitionImage, *result.ContainerDefinitions[i].Image)
+		}
+	}
+}
+
 // func TestOutbackDeploy(t *testing.T) {
 // 	emptyValue := ""
 // 	fam := "family1"

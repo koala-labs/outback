@@ -311,14 +311,16 @@ func (u *Outback) RollbackTaskDefinition(c *ecs.Cluster, s *ecs.Service, t *ecs.
 }
 
 // UpdateTaskDefinitionImage copies a task definition and update its image tag
-func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, tag string) ecs.TaskDefinition {
-	r := regexp.MustCompile(`(\S+):`)
-	currentImage := *t.ContainerDefinitions[0].Image
-
-	repo := r.FindStringSubmatch(currentImage)[1]
+func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, tag string) ecs.TaskDefinition {
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
 
-	*t.ContainerDefinitions[0].Image = newImage
+	// search for ContainerDefinitions that contains target repo url
+	// if non matches don't make any updates
+	for i, container := range t.ContainerDefinitions {
+        if strings.Contains(*container.Image, repo) {
+            t.ContainerDefinitions[i].Image = &newImage
+        }
+    }
 
 	return t
 }
