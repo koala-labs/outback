@@ -314,8 +314,8 @@ func (u *Outback) RollbackTaskDefinition(c *ecs.Cluster, s *ecs.Service, t *ecs.
 func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, tag string) ecs.TaskDefinition {
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
 
-	// search for ContainerDefinitions that contains target repo url
-	// if non matches don't make any updates
+	// search for a ContainerDefinition that contains target repo url in the docker Image
+	// if none matches don't make any updates
 	for i, container := range t.ContainerDefinitions {
         if strings.Contains(*container.Image, repo) {
             t.ContainerDefinitions[i].Image = &newImage
