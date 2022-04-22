@@ -153,7 +153,7 @@ func (u *Outback) DeployAll(deploy *Deployment) <-chan error {
 	wg.Add(len(deploy.DeployDetails))
 	for _, detail := range deploy.DeployDetails {
 		go func(detail *DeployDetail) {
-			taskDef, err := u.UpdateServiceWithNewTaskDefinition(detail.Cluster, detail.Service, deploy.BuildDetail.CommitHash)
+			taskDef, err := u.UpdateServiceWithNewTaskDefinition(detail.Cluster, detail.Service, deploy.BuildDetail.Repo, deploy.BuildDetail.CommitHash)
 
 			if err != nil {
 				errCh <- err
