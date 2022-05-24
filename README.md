@@ -65,6 +65,7 @@ Outback will relies on this config to run its operations.
 ### Commands
 
 - outback deploy
+- outback build
 - outback service
 - outback task
 - outback rollback
@@ -129,6 +130,32 @@ Docker build arguments can also be passed though the `.outback/config.json` and 
   ]
 }
 ```
+
+#### Building
+
+If you only need to build and push a docker image to the repository outlined in the `.outback/config.json` file you can use the `outback build` command.
+
+- [build](#outback-build)
+
+##### `outback build`
+
+```console
+outback build --cluster --verbose --login
+```
+
+Build and push a docker image to AWS ECR
+
+A cluster must be specified via the --cluster flag to select the correct dockerfile. The --verbose flag can be input to enable verbose output. The --login flag can be input to login to AWS ECR.
+
+Docker build arguments
+
+Outback can use `--build-arg` or `-b` to pass arguments during the docker build phase. Multiple build arguments can be passed, see example below.
+
+```console
+outback build --cluster dev --build-arg NODE_ENV=dev --build-arg CAT=lazy
+```
+
+Docker build arguments can also be passed though the `.outback/config.json` and coexist with the `--build-arg` command option.
 
 #### Services
 
