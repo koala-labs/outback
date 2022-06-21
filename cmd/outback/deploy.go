@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var buildArgs []string
+var deployBuildArgs []string
 
 var deployCmd = &cobra.Command{
 	Use:   "deploy",
@@ -44,14 +44,8 @@ func deploy(clusterName string, timeout int) error {
 	deployment.SetCommitHash(commit)
 	deployment.SetRepo(cfg.Repo)
 	deployment.SetDockerfile(cluster.Dockerfile)
-	deployment.SetBuildArgs(buildArgs)
+	deployment.SetBuildArgs(deployBuildArgs)
 	deployment.SetConfigBuildArgs(configBuildArgs)
-
-	// Build Docker image and push to repo
-	err = outback.LoginBuildPushImage(deployment.BuildDetail)
-	if err != nil {
-		return err
-	}
 
 	for _, service := range cluster.Services {
 		detail := outback.NewDeployDetail()
@@ -83,7 +77,20 @@ func deploy(clusterName string, timeout int) error {
 		// Set the TaskDefinition in the deployment detail
 		detail.SetTaskDefinition(ecsTaskDef)
 
+		// Get the commit from the last TaskDefinition if it exists
+		commit, err := outback.GetLastDeployedCommit(*ecsTaskDef.TaskDefinitionArn)
+		if err == nil {
+			deployment.SetBuildCacheFrom([]string{fmt.Sprintf("%s:%s", deployment.BuildDetail.Repo, commit)})
+			fmt.Printf("Will attempt to restore Docker cache for %s from commit: %s\n", service, commit)
+		}
+
 		deployment.DeployDetails = append(deployment.DeployDetails, detail)
+	}
+
+	// Build Docker image and push to repo
+	err = outback.LoginBuildPushImage(deployment.BuildDetail)
+	if err != nil {
+		return err
 	}
 
 	term.Clear()
@@ -111,5 +118,5 @@ func deploy(clusterName string, timeout int) error {
 
 func init() {
 	rootCmd.AddCommand(deployCmd)
-	deployCmd.Flags().StringSliceVarP(&buildArgs, "build-arg", "b", []string{}, "Set build-time variables")
+	deployCmd.Flags().StringSliceVarP(&deployBuildArgs, "build-arg", "b", []string{}, "Set build-time variables")
 }

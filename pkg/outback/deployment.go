@@ -32,6 +32,7 @@ type BuildDetail struct {
 	Dockerfile      string
 	buildArgs       []string
 	configBuildArgs []string
+	cacheFrom       []string
 }
 
 func (d *DeployDetail) SetCluster(cluster *ecs.Cluster) {
@@ -76,6 +77,10 @@ func (d *Deployment) SetBuildArgs(buildArgs []string) {
 
 func (d *Deployment) SetConfigBuildArgs(configBuildArgs []string) {
 	d.BuildDetail.configBuildArgs = configBuildArgs
+}
+
+func (d *Deployment) SetBuildCacheFrom(cacheFrom []string) {
+	d.BuildDetail.cacheFrom = cacheFrom
 }
 
 func (d *Deployment) TaskDefinitions() string {
@@ -180,13 +185,31 @@ func (u *Outback) LoginBuildPushImage(info BuildDetail) error {
 		return err
 	}
 
-	err = docker.ImageBuild(info.Repo, info.CommitHash, info.Dockerfile, info.buildArgs, info.configBuildArgs)
+	err = docker.ImageBuild(info.Repo, info.CommitHash, info.Dockerfile, info.buildArgs, info.configBuildArgs, info.cacheFrom)
 
 	if err != nil {
 		return err
 	}
 
 	err = docker.ImagePush(info.Repo, info.CommitHash)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (u *Outback) LoginPullImage(repo string, tag string) error {
+	var err error
+
+	err = u.ECRLogin()
+
+	if err != nil {
+		return err
+	}
+
+	err = docker.ImagePull(repo, tag)
 
 	if err != nil {
 		return err
