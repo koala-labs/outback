@@ -29,7 +29,7 @@ var rootCmd = &cobra.Command{
 	Use:     "outback",
 	Short:   "Outback is an ecs deployment tool",
 	Long:    ``,
-	Version: "v2.1.0",
+	Version: "v2.2.0",
 }
 
 // Execute adds all child commands so the root command sets flags appropriately.
