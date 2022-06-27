@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var buildDockerArgs []string
+var buildArgs []string
 
 var buildCmd = &cobra.Command{
 	Use:   "build",
@@ -60,5 +60,5 @@ func build(clusterName string, timeout int) error {
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
-	buildCmd.Flags().StringSliceVarP(&buildDockerArgs, "build-arg", "b", []string{}, "Set build-time variables")
+	buildCmd.Flags().StringSliceVarP(&buildArgs, "build-arg", "b", []string{}, "Set build-time variables")
 }
