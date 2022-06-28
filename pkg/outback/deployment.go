@@ -161,6 +161,7 @@ func (u *Outback) DeployAll(deploy *Deployment) <-chan error {
 			taskDef, err := u.UpdateServiceWithNewTaskDefinition(detail.Cluster, detail.Service, deploy.BuildDetail.Repo, deploy.BuildDetail.CommitHash)
 
 			if err != nil {
+				fmt.Printf("Deployment failed: %s \n", err)
 				errCh <- err
 				wg.Done()
 			}

@@ -98,6 +98,7 @@ func deploy(clusterName string, timeout int) error {
 	errCh := outback.DeployAll(deployment)
 
 	for err := range errCh {
+		fmt.Printf("Deployment failed: %s \n", err)
 		return err
 	}
 
