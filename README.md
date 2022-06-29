@@ -62,6 +62,14 @@ On first run, if there is not a `.outback/config.json` config present in your cu
 
 Outback will relies on this config to run its operations.
 
+In addition, some AWS settings can be configured globally through environment variables:
+
+| ENV var                 | description                                                                          | default |
+| ----------------------- | ------------------------------------------------------------------------------------ | ------- |
+| `AWS_ACCESS_KEY_ID`     | AWS access key (takes precedence over the value in `~/.aws/credentials`)             |         |
+| `AWS_SECRET_ACCESS_KEY` | AWS secret access key (takes precedence over the value in `~/.aws/credentials`)      |         |
+| `AWS_MAX_ATTEMPTS`      | The maximum number attempts to make for an AWS requests before failing the operation | -1      |
+
 ### Commands
 
 - outback deploy
