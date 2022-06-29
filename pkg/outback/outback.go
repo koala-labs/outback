@@ -38,13 +38,24 @@ type Outback struct {
 
 // New creates a Outback session and connects to AWS to create a session
 func New(awsConfig *AwsConfig) *Outback {
+	// default to -1 which defers the max retry to the service specific configuration.
+	// see: https://pkg.go.dev/github.com/aws/aws-sdk-go/aws#Config.MaxRetries
+	maxRetries := -1
+	if os.Getenv("AWS_MAX_ATTEMPTS") != "" {
+		m, err := strconv.Atoi(os.Getenv("AWS_MAX_ATTEMPTS"))
+		if err == nil {
+			maxRetries = m
+		}
+	}
+
 	var sess *session.Session
 	if os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
 		sess = session.Must(session.NewSessionWithOptions(session.Options{
-			Config: aws.Config{Region: aws.String(awsConfig.Region)}}))
+			Config: aws.Config{Region: aws.String(awsConfig.Region), MaxRetries: aws.Int(maxRetries)},
+		}))
 	} else {
 		sess = session.Must(session.NewSessionWithOptions(session.Options{
-			Config:  aws.Config{Region: aws.String(awsConfig.Region)},
+			Config:  aws.Config{Region: aws.String(awsConfig.Region), MaxRetries: aws.Int(maxRetries)},
 			Profile: awsConfig.Profile,
 		}))
 	}
@@ -317,10 +328,10 @@ func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, t
 	// search for a ContainerDefinition that contains target repo url in the docker Image
 	// if none matches don't make any updates
 	for i, container := range t.ContainerDefinitions {
-        if strings.Contains(*container.Image, repo) {
-            t.ContainerDefinitions[i].Image = &newImage
-        }
-    }
+		if strings.Contains(*container.Image, repo) {
+			t.ContainerDefinitions[i].Image = &newImage
+		}
+	}
 
 	return t
 }
