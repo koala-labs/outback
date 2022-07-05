@@ -43,13 +43,14 @@ func addEnvVar(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	updatedDefinition, err := updateTaskDefinition(t, flagServiceAddEnvVars)
+	parsedEnvVars, err := stringsToKeyValue(flagServiceAddEnvVars)
 
 	if err != nil {
 		return err
 	}
+	updatedDefinition := u.UpdateContainerDefinitionEnvVars(*t, parsedEnvVars, cfg.Repo)
 
-	registeredDefinition, err := u.RegisterTaskDefinitionWithEnvVars(updatedDefinition)
+	registeredDefinition, err := u.RegisterTaskDefinitionWithEnvVars(&updatedDefinition)
 
 	if err != nil {
 		return err
@@ -64,32 +65,6 @@ func addEnvVar(cmd *cobra.Command, args []string) error {
 	fmt.Println("Environment variable(s) " + strings.Join(flagServiceAddEnvVars, ", ") + " will be added")
 
 	return nil
-}
-
-func updateTaskDefinition(t *ecs.TaskDefinition, inputs []string) (*ecs.TaskDefinition, error) {
-	current := t.ContainerDefinitions[0].Environment
-
-	parsed, err := stringsToKeyValue(inputs)
-
-	if err != nil {
-		return nil, err
-	}
-
-	t.ContainerDefinitions[0].Environment = updateEnvVars(current, parsed)
-
-	return t, nil
-}
-
-func updateEnvVars(current []*ecs.KeyValuePair, updates []*ecs.KeyValuePair) []*ecs.KeyValuePair {
-	for _, u := range updates {
-		if i, ok := contains(current, u); ok {
-			current[*i].Value = u.Value
-		} else {
-			current = append(current, u)
-		}
-	}
-
-	return current
 }
 
 func stringsToKeyValue(inputs []string) ([]*ecs.KeyValuePair, error) {
@@ -115,16 +90,6 @@ func stringsToKeyValue(inputs []string) ([]*ecs.KeyValuePair, error) {
 	}
 
 	return keyVals, nil
-}
-
-// contains returns an index and bool if keyVal.Name is in the keyVals slice
-func contains(keyVals []*ecs.KeyValuePair, keyVal *ecs.KeyValuePair) (*int, bool) {
-	for i, kv := range keyVals {
-		if kv.Name == keyVal.Name {
-			return &i, true
-		}
-	}
-	return nil, false
 }
 
 func init() {
