@@ -24,6 +24,9 @@ import (
 	"github.com/pkg/errors"
 )
 
+const DEPLOY_TIME_ENV_VAR = "OUTBACK_DEPLOY_TIME"
+const DEPLOY_SHA_ENV_VAR = "OUTBACK_DEPLOY_GIT_SHA"
+
 type AwsConfig struct {
 	Profile string
 	Region  string
@@ -250,6 +253,17 @@ func (u *Outback) RegisterTaskDefinitionWithImage(c *ecs.Cluster, s *ecs.Service
 
 	newTaskDef := u.UpdateTaskDefinitionImage(*t, repo, tag)
 
+	// track deploy time and deploy git commit sha as ENV variables in task definition
+	deployInfo := []*ecs.KeyValuePair{{
+		Name:  aws.String(DEPLOY_TIME_ENV_VAR),
+		Value: aws.String(time.Now().Format(time.RFC822Z)),
+	}, {
+		Name:  aws.String(DEPLOY_SHA_ENV_VAR),
+		Value: aws.String(tag),
+	}}
+
+	newTaskDef = u.UpdateContainerDefinitionEnvVars(newTaskDef, deployInfo, repo)
+
 	result, err := u.ECS.RegisterTaskDefinition(&ecs.RegisterTaskDefinitionInput{
 		// Update the task definition to use the new docker image via UpdateTaskDefinitionImage
 		Cpu:                     newTaskDef.Cpu,
@@ -321,7 +335,7 @@ func (u *Outback) RollbackTaskDefinition(c *ecs.Cluster, s *ecs.Service, t *ecs.
 	return taskFamilyRevision, err
 }
 
-// UpdateTaskDefinitionImage copies a task definition and update its image tag
+// UpdateTaskDefinitionImage copies a task definition and updates its image tag
 func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, tag string) ecs.TaskDefinition {
 	newImage := fmt.Sprintf("%s:%s", repo, tag)
 
@@ -334,6 +348,39 @@ func (u *Outback) UpdateTaskDefinitionImage(t ecs.TaskDefinition, repo string, t
 	}
 
 	return t
+}
+
+// UpdateContainerDefinitionEnvVars copies a task definition and updates the container definition environment
+func (u *Outback) UpdateContainerDefinitionEnvVars(t ecs.TaskDefinition, updates []*ecs.KeyValuePair, repo string) ecs.TaskDefinition {
+	// search for a ContainerDefinition that contains target repo url in the docker Image
+	// if none matches don't make any updates
+	for i, container := range t.ContainerDefinitions {
+		if strings.Contains(*container.Image, repo) {
+			currentEnv := t.ContainerDefinitions[i].Environment
+
+			for _, env := range updates {
+				if i, ok := contains(currentEnv, env); ok {
+					currentEnv[*i].Value = env.Value
+				} else {
+					currentEnv = append(currentEnv, env)
+				}
+			}
+
+			t.ContainerDefinitions[i].Environment = currentEnv
+		}
+	}
+
+	return t
+}
+
+// contains is a helper to find a value in an ecs.KeyValuePair slice
+func contains(keyVals []*ecs.KeyValuePair, keyVal *ecs.KeyValuePair) (*int, bool) {
+	for i, kv := range keyVals {
+		if kv.Name == keyVal.Name {
+			return &i, true
+		}
+	}
+	return nil, false
 }
 
 // GetRepoFromImage parses an image URL:tag and reads its repo
