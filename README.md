@@ -92,7 +92,7 @@ A deployment consists of 5 steps necessary to update an AWS ECS Service.
 1. It builds a docker image
 2. It tags a docker image with the current short git commit hash
 3. It pushes a docker image to AWS ECR
-4. It creates a new task definition revision, only replacing its image with the newly tagged one
+4. It creates a new task definition revision, only replacing its image with the newly tagged one and adding two environment variables to track the deploy
 5. It updates a service on ecs to use the newly created task definition
 
 - [deploy](#outback-deploy)
@@ -138,6 +138,11 @@ Docker build arguments can also be passed though the `.outback/config.json` and 
   ]
 }
 ```
+
+The final task definition for the deployment will also include two environment variables to help track when the deploy happened and what commit was deployed: 
+
+* `OUTBACK_DEPLOY_TIME` tracks the exact time the ECS deploy was triggered (using the [RFC822Z](https://validator.w3.org/feed/docs/error/InvalidRFC2822Date.html) date format)
+* `OUTBACK_DEPLOY_GIT_SHA` tracks the most recent git commit for the source repo (also matches the ECR docker image tag)
 
 #### Building
 
