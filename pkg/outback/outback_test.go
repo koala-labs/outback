@@ -1141,10 +1141,10 @@ func TestOutbackUpdateTaskDefinitionImage(t *testing.T) {
 	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
 		TaskDefinitionArn: aws.String("taskdefarn"),
 		ContainerDefinitions: []*ecs.ContainerDefinition{{
-			Name: aws.String("test-container"),
+			Name:  aws.String("test-container"),
 			Image: aws.String("test-container:100"),
 		}},
-	},"test-container", "123")
+	}, "test-container", "123")
 
 	updatedTaskDefinitionImage := result.ContainerDefinitions[0].Image
 	expectedTaskDefinitionImage := "test-container:123"
@@ -1163,19 +1163,75 @@ func TestOutbackUpdateTaskDefinitionImageWithMultipleContainers(t *testing.T) {
 	result := outback.UpdateTaskDefinitionImage(ecs.TaskDefinition{
 		TaskDefinitionArn: aws.String("taskdefarn"),
 		ContainerDefinitions: []*ecs.ContainerDefinition{{
-			Name: aws.String("other-container"),
+			Name:  aws.String("other-container"),
 			Image: aws.String("other-container:999"),
 		}, {
-			Name: aws.String("target-container"),
+			Name:  aws.String("target-container"),
 			Image: aws.String("target-container:100"),
 		}},
 	}, "target-container", "123")
 
-	cases := []string {"other-container:999", "target-container:123"}
+	cases := []string{"other-container:999", "target-container:123"}
 
 	for i, expectedTaskDefinitionImage := range cases {
 		if *result.ContainerDefinitions[i].Image != expectedTaskDefinitionImage {
 			t.Errorf("expected %v value, got %v", expectedTaskDefinitionImage, *result.ContainerDefinitions[i].Image)
+		}
+	}
+}
+
+func TestOutbackUpdateContainerDefinitionEnvVars(t *testing.T) {
+	outback := Outback{
+		ECS: mockedRunTask{},
+		ECR: mockedECRClient{},
+	}
+
+	result := outback.UpdateContainerDefinitionEnvVars(ecs.TaskDefinition{
+		TaskDefinitionArn: aws.String("taskdefarn"),
+		ContainerDefinitions: []*ecs.ContainerDefinition{{
+			Name:  aws.String("other-container"),
+			Image: aws.String("other-container:999"),
+			Environment: []*ecs.KeyValuePair{{
+				Name:  aws.String("EXISTING_ENV_VAR_FOR_OTHER"),
+				Value: aws.String("true"),
+			}},
+		}, {
+			Name:  aws.String("target-container"),
+			Image: aws.String("target-container:100"),
+			Environment: []*ecs.KeyValuePair{{
+				Name:  aws.String("EXISTING_ENV_VAR_FOR_TARGET"),
+				Value: aws.String("true"),
+			}},
+		}},
+	}, []*ecs.KeyValuePair{
+		{
+			Name:  aws.String("NEW_ENV_VAR_FOR_TARGET"),
+			Value: aws.String("true"),
+		},
+	}, "target-container")
+
+	expectedTaskEnv := [][]*ecs.KeyValuePair{{
+		{
+			Name:  aws.String("EXISTING_ENV_VAR_FOR_OTHER"),
+			Value: aws.String("true"),
+		},
+	}, {
+		{
+			Name:  aws.String("EXISTING_ENV_VAR_FOR_TARGET"),
+			Value: aws.String("true"),
+		},
+		{
+			Name:  aws.String("NEW_ENV_VAR_FOR_TARGET"),
+			Value: aws.String("true"),
+		},
+	}}
+
+	for i, expectedServiceEnv := range expectedTaskEnv {
+		for j, expectedEnvVar := range expectedServiceEnv {
+			testEnvVar := result.ContainerDefinitions[i].Environment[j]
+			if *testEnvVar.Name != *expectedEnvVar.Name && testEnvVar.Value != expectedEnvVar.Value {
+				t.Errorf("expected %v value, got %v", expectedEnvVar, testEnvVar)
+			}
 		}
 	}
 }
