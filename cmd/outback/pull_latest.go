@@ -8,7 +8,7 @@ import (
 
 var pullLatestCmd = &cobra.Command{
 	Use:   "pull-latest",
-	Short: "Pull the latest docker image from a deployment",
+	Short: "Pull the latest deployed docker image from a service",
 	Long: `A cluster must be specified via the --cluster flag, and a service must be specified via the --cluster flag.
 	The --verbose flag can be input to enable verbose output.
 	The --login flag can be input to login to AWS ECR.`,
@@ -20,6 +20,14 @@ func runPullLatest(cmd *cobra.Command, args []string) error {
 }
 
 func pullLatest(clusterName string, serviceName string) error {
+	if clusterName == "" {
+		return ErrorMissingClusterInput
+	}
+
+	if serviceName == "" {
+		return ErrorMissingServiceInput
+	}
+
 	outback := Outback.New(awsConfig)
 
 	cluster, err := cfg.getCluster(clusterName)
@@ -48,6 +56,8 @@ func pullLatest(clusterName string, serviceName string) error {
 	if err != nil {
 		return err
 	}
+
+	fmt.Printf("Found image at %s:%s\nPulling...\n", cfg.Repo, commit)
 
 	// Pull latest image
 	err = outback.LoginPullImage(cfg.Repo, commit)
