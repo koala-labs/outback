@@ -32,6 +32,11 @@ var (
 	ErrCantFollowWithEndTime = errors.New("Could not follow logs because an end time was given")
 )
 
+var (
+	ErrorMissingClusterInput = errors.New("A cluster name must be specified using the --cluster flag")
+	ErrorMissingServiceInput = errors.New("A service name must be specified using the --service flag")
+)
+
 // handleError is intended to be called with an error return to simplify error handling
 // Usage:
 // foo, err := GetFoo()
